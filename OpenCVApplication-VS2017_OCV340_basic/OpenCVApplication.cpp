@@ -1486,9 +1486,6 @@ void labelImage2Pass(const Adiacent& ad) {
 	const Vec3b background_pixel(255, 255, 255);
 	char fname[MAX_PATH];
 
-	std::ofstream out("out.txt");
-	std::streambuf* coutbuf = std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt
-
 	if (openFileDlg(fname))
 	{
 		Mat src{ imread(fname, CV_LOAD_IMAGE_GRAYSCALE) };
@@ -1564,8 +1561,6 @@ void labelImage2Pass(const Adiacent& ad) {
 		imshow("Labeled", labeled);
 		waitKey(0);
 	}
-
-	std::cout.rdbuf(coutbuf);
 }
 
 void labelImage2Pass(int tip_adiacent) {
@@ -1596,9 +1591,313 @@ void labelImage2Pass(int tip_adiacent) {
 	labelImage2Pass(adiacent);
 }
 
+
+
+// 7.4.1 && 7.4.2
+enum MorphType {
+	DILLATE,
+	ERODE,
+	OPEN,
+	CLOSE
+};
+
+enum KernelType {
+	CROSS_3X3,
+	BOX_3X3
+};
+
+class Kernel {
+private:
+	Mat m_kernel;
+	Point& m_origin;
+public:
+	Kernel(Mat kernel, Point origin) :
+		m_kernel{ kernel }, m_origin{ origin }
+	{
+	}
+
+	Kernel(KernelType kernelType, Point origin) :
+		m_origin{ origin }, m_kernel(3, 3, CV_8UC1, 255)
+	{
+		switch (kernelType) {
+		case BOX_3X3:
+			for (int i = 0; i < 3; i++) {
+				for (int j = 0; j < 3; j++) {
+					m_kernel.at<uchar>(i, j) = 0;
+				}
+			}
+			break;
+		case CROSS_3X3:
+			m_kernel.at<uchar>(1, 1) = 0;
+			m_kernel.at<uchar>(0, 1) = 0;
+			m_kernel.at<uchar>(2, 1) = 0;
+			m_kernel.at<uchar>(1, 0) = 0;
+			m_kernel.at<uchar>(1, 2) = 0;
+		}
+	}
+
+	Kernel(KernelType kernelType) : Kernel(kernelType, Point(1, 1))
+	{
+	}
+
+	Mat& getKernel() {
+		return m_kernel;
+	}
+
+	Point& getOrigin() {
+		return m_origin;
+	}
+};
+
+Mat* myDilate(const Mat* src, Kernel& kernel) {
+	int srcWidth{ src->cols };
+	int srcHeight{ src->rows };
+	int kernelWidth{ kernel.getKernel().cols};
+	int kernelHeight{ kernel.getKernel().rows};
+
+	Mat* modified = new Mat(srcHeight, srcWidth, CV_8UC1, 255);
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			if (src->at<uchar>(i, j) == 0) {
+				for (int ik = 0; ik < kernelHeight; ik++) {
+					for (int jk = 0; jk < kernelWidth; jk++) {
+						if (kernel.getKernel().at<uchar>(ik, jk) == 0) {
+							int newPixelHeight = i - kernel.getOrigin().y + ik;
+							int newPixelWidth = j - kernel.getOrigin().x + jk;
+							if (isInside(srcHeight, srcWidth, newPixelHeight, newPixelWidth)) {
+								modified->at<uchar>(newPixelHeight, newPixelWidth) = 0;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return modified;
+}
+
+Mat* myErode(const Mat* src, Kernel& kernel) {
+	int srcWidth{ src->cols };
+	int srcHeight{ src->rows };
+	int kernelWidth{ kernel.getKernel().cols };
+	int kernelHeight{ kernel.getKernel().rows };
+
+	Mat* modified = new Mat(srcHeight, srcWidth, CV_8UC1, 255);
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			bool ok = true;
+			for (int ik = 0; ik < kernelHeight; ik++) {
+				for (int jk = 0; jk < kernelWidth; jk++) {
+					if (kernel.getKernel().at<uchar>(ik, jk) == 0) {
+						int newPixelHeight = i - kernel.getOrigin().y + ik;
+						int newPixelWidth = j - kernel.getOrigin().x + jk; 
+						if (!isInside(srcHeight, srcWidth, newPixelHeight, newPixelWidth) ||
+							!src->at<uchar>(newPixelHeight, newPixelWidth) == 0) {
+							ok = false;
+							break;
+						}
+					}
+				}
+			}
+			if (ok) {
+				modified->at<uchar>(i, j) = 0;
+			}
+		}
+	}
+
+	return modified;
+}
+
+void executeMorphOp(MorphType morphType, Kernel& kernel, int nOp, int nOpOC) {
+	char fname[MAX_PATH];
+
+	if (openFileDlg(fname))
+	{
+		Mat src{ imread(fname, CV_LOAD_IMAGE_GRAYSCALE) };
+		
+		Mat* result = new Mat(src);
+		Mat* resultCopy{};
+		switch (morphType) {
+			case DILLATE:
+				for (int i = 0; i < nOp; i++) {
+					resultCopy = result;
+					result = myDilate(resultCopy, kernel);
+					resultCopy->release();
+				}
+				break;
+			case ERODE:
+				for (int i = 0; i < nOp; i++) {
+					resultCopy = result;
+					result = myErode(resultCopy, kernel);
+					resultCopy->release();
+				}
+				break;
+			case OPEN:
+				for (int i = 0; i < nOp; i++) {
+					for (int j = 0; j < nOpOC; j++) {
+						resultCopy = result;
+						result = myErode(resultCopy, kernel);
+						resultCopy->release();
+					}
+					for (int j = 0; j < nOpOC; j++) {
+						resultCopy = result;
+						result = myDilate(resultCopy, kernel);
+						resultCopy->release();
+					}
+				}
+				break;
+			case CLOSE:
+				for (int i = 0; i < nOp; i++) {
+					for (int j = 0; j < nOpOC; j++) {
+						resultCopy = result;
+						result = myDilate(resultCopy, kernel);
+						resultCopy->release();
+					}
+					for (int j = 0; j < nOpOC; j++) {
+						resultCopy = result;
+						result = myErode(resultCopy, kernel);
+						resultCopy->release();
+					}
+				}
+				break;
+		}
+
+		imshow("Original", src);
+		imwrite("Original.png", src);
+		if (result != nullptr) {
+			imshow("Modified", *result);
+			imwrite("Modified.png", *result);
+		}
+		result->release();
+		waitKey(0);
+	}
+}
+
+void executeMorphOp(MorphType morphType, KernelType kernelType, int nOp, int nOpOC) {
+	executeMorphOp(morphType, Kernel(kernelType), nOp, nOpOC);
+}
+
+// 7.4.3
+void contourFromMorph(Kernel& kernel) {
+	const Vec3b background_pixel(255, 255, 255);
+	char fname[MAX_PATH];
+
+	if (openFileDlg(fname))
+	{
+		Mat src{ imread(fname, CV_LOAD_IMAGE_GRAYSCALE) };
+		int srcWidth{ src.cols };
+		int srcHeight{ src.rows };
+
+		Mat* eroded = myErode(&src, kernel);
+
+		Mat result{ src.clone() };
+
+		//result - eroded
+		for (int i = 0; i < srcHeight; i++) {
+			for (int j = 0; j < srcWidth; j++) {
+				if (result.at<uchar>(i, j) == 0 && eroded->at<uchar>(i, j) == 0) {
+					result.at<uchar>(i, j) = 255;
+				}
+			}
+		}
+
+		imshow("Original", src);
+		imwrite("Original.png", src);
+		imshow("Modified", result);
+		imwrite("Modified.png", result);
+		waitKey(0);
+	}
+}
+
+void contourFromMorph(KernelType kernelType) {
+	contourFromMorph(Kernel(kernelType));
+}
+
+//7.4.4
+void fillFromMorph(Kernel& kernel, Point p) {
+	const Vec3b background_pixel(255, 255, 255);
+	char fname[MAX_PATH];
+
+	if (openFileDlg(fname))
+	{
+		Mat src{ imread(fname, CV_LOAD_IMAGE_GRAYSCALE) };
+		int srcWidth{ src.cols };
+		int srcHeight{ src.rows };
+
+		//!src
+		Mat negSrc(srcHeight, srcWidth, CV_8UC1);
+		for (int i = 0; i < srcHeight; i++) {
+			for (int j = 0; j < srcWidth; j++) {
+				if (src.at<uchar>(i, j)) {
+					negSrc.at<uchar>(i, j) = 0;
+				}
+				else {
+					negSrc.at<uchar>(i, j) = 255;
+				}
+			}
+		}
+
+		int matsIdentical = false;
+		Mat* dilated = new Mat(srcHeight, srcWidth, CV_8UC1, 255);
+		Mat* lastDilated;
+		dilated->at<uchar>(p.y, p.x) = 0;
+		int iter = 1;
+
+		while (!matsIdentical) {
+			lastDilated = dilated;
+			dilated = myDilate(dilated, kernel);
+
+			//intersect with negative
+			for (int i = 0; i < srcHeight; i++) {
+				for (int j = 0; j < srcWidth; j++) {
+					if (negSrc.at<uchar>(i, j) != 0 || dilated->at<uchar>(i, j) != 0) {
+						dilated->at<uchar>(i, j) = 255;
+					}
+				}
+			}
+
+			//compare
+			matsIdentical = true;
+			for (int i = 0; i < srcHeight; i++) {
+				for (int j = 0; j < srcWidth; j++) {
+					if (lastDilated->at<uchar>(i, j) != dilated->at<uchar>(i, j)) {
+						matsIdentical = false;
+						break;
+					}
+				}
+			}
+			if (!matsIdentical) {
+				imshow("intermediate" + (iter++), *lastDilated);
+			}
+		}
+
+		//reunion
+		for (int i = 0; i < srcHeight; i++) {
+			for (int j = 0; j < srcWidth; j++) {
+				if (src.at<uchar>(i, j) == 0 && dilated->at<uchar>(i, j) == 255) {
+					dilated->at<uchar>(i, j) = 0;
+				}
+			}
+		}
+
+		imshow("Original", src);
+		imwrite("Original.png", src);
+		imshow("Filled", *dilated);
+		imwrite("Filled.png", *dilated);
+		waitKey(0);
+	}
+}
+void fillFromMorph(KernelType kernelType, Point p) {
+	fillFromMorph(Kernel(kernelType), p);
+}
+
 int main()
 {
 	int op;
+	int nOpOC{ 1 };
 	do
 	{
 		system("cls");
@@ -1629,6 +1928,10 @@ int main()
 		printf(" 23 - 4.4.2 (Filtering based on area and elongation angle)\n");
 		printf(" 24 - 5.5.1 & 5.5.2 (Labeling using BFS)\n");
 		printf(" 25 - 5.5.3 (Labeling using 2 passes and Disjoint sets)\n");
+		printf(" 26 - 7.4.1 (Morph operations)\n");
+		printf(" 27 - 7.4.2 (Repeated morph operations)\n");
+		printf(" 28 - 7.4.3 (Contour using morph operations)\n");
+		printf(" 29 - 7.4.4 (Fill using morph operations)\n");
 		printf(" 0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
@@ -1775,6 +2078,136 @@ int main()
 			}
 			else {
 				labelImage2Pass(tip_ad_2pass);
+			}
+			break;
+		case 26:
+			int morphType;
+			std::cout << "Choose morph type (0 - DILLATE, 1 - ERODE, 2 - OPEN, 3 - CLOSE): ";
+			std::cin >> morphType;
+			if (morphType == 2 || morphType == 3) {
+				std::cout << "Choose number of dillates / erodes for open / close: ";
+				std::cin >> nOpOC;
+			}
+			int kernelType;
+			std::cout << "Choose kernel type (0 - 3X3 CROSS, 1 - 3X3 BOX, 2 - CUSTOM): ";
+			std::cin >> kernelType;
+			if (kernelType == 2) {
+				int width, height;
+				std::cout << "Kernel height: ";
+				std::cin >> height;
+				std::cout << "Kernel width: ";
+				std::cin >> width;
+				Mat kernelMat(height, width, CV_8UC1, 255);
+				for (int i = 0; i < height; i++) {
+					for (int j = 0; j < width; j++) {
+						std::cout << "Kernel(i = " << i << ", j = " << j << "): ";
+						int read;
+						std::cin >> read;
+						kernelMat.at<uchar>(i, j) = read;
+					}
+				}
+				Point kernelPoint;
+				std::cout << "Kernel origin (i, j): ";
+				std::cin >> kernelPoint.y >> kernelPoint.x;
+				Kernel kernel(kernelMat, kernelPoint);
+				executeMorphOp(static_cast<MorphType>(morphType), kernel, 1, nOpOC);
+			}
+			else {
+				executeMorphOp(static_cast<MorphType>(morphType), static_cast<KernelType>(kernelType), 1, nOpOC);
+			}
+			break;
+		case 27:
+			int morphType2;
+			std::cout << "Choose morph type (0 - DILLATE, 1 - ERODE, 2 - OPEN, 3 - CLOSE): ";
+			std::cin >> morphType2;
+			int nOp;
+			std::cout << "Choose number of operations: ";
+			std::cin >> nOp;
+			if (morphType2 == 2 || morphType2 == 3) {
+				std::cout << "Choose number of dillates / erodes for open / close: ";
+				std::cin >> nOpOC;
+			}
+			int kernelType2;
+			std::cout << "Choose kernel type (0 - 3X3 CROSS, 1 - 3X3 BOX, 2 - CUSTOM): ";
+			std::cin >> kernelType2;
+			if (kernelType2 == 2) {
+				int width, height;
+				std::cout << "Kernel height: ";
+				std::cin >> height;
+				std::cout << "Kernel width: ";
+				std::cin >> width;
+				Mat kernelMat(height, width, CV_8UC1, 255);
+				for (int i = 0; i < height; i++) {
+					for (int j = 0; j < width; j++) {
+						std::cout << "Kernel(i = " << i << ", j = " << j << "): ";
+						std::cin >> kernelMat.at<uchar>(i, j);
+					}
+				}
+				Point kernelPoint;
+				std::cout << "Kernel origin (i, j): ";
+				std::cin >> kernelPoint.y >> kernelPoint.x;
+				Kernel kernel(kernelMat, kernelPoint);
+				executeMorphOp(static_cast<MorphType>(morphType2), kernel, nOp, nOpOC);
+			}
+			else {
+				executeMorphOp(static_cast<MorphType>(morphType2), static_cast<KernelType>(kernelType2), nOp, nOpOC);
+			}
+			break;
+		case 28:
+			int kernelType3;
+			std::cout << "Choose kernel type (0 - 3X3 CROSS, 1 - 3X3 BOX, 2 - CUSTOM): ";
+			std::cin >> kernelType3;
+			if (kernelType3 == 2) {
+				int width, height;
+				std::cout << "Kernel height: ";
+				std::cin >> height;
+				std::cout << "Kernel width: ";
+				std::cin >> width;
+				Mat kernelMat(height, width, CV_8UC1, 255);
+				for (int i = 0; i < height; i++) {
+					for (int j = 0; j < width; j++) {
+						std::cout << "Kernel(i = " << i << ", j = " << j << "): ";
+						std::cin >> kernelMat.at<uchar>(i, j);
+					}
+				}
+				Point kernelPoint;
+				std::cout << "Kernel origin (i, j): ";
+				std::cin >> kernelPoint.y >> kernelPoint.x;
+				Kernel kernel(kernelMat, kernelPoint);
+				contourFromMorph(kernel);
+			}
+			else {
+				contourFromMorph(static_cast<KernelType>(kernelType3));
+			}
+			break;
+		case 29:
+			int kernelType4;
+			std::cout << "Choose kernel type (0 - 3X3 CROSS, 1 - 3X3 BOX, 2 - CUSTOM): ";
+			std::cin >> kernelType4;
+			Point p;
+			std::cout << "Choose starting point (i, j): ";
+			std::cin >> p.y >> p.x;
+			if (kernelType4 == 2) {
+				int width, height;
+				std::cout << "Kernel height: ";
+				std::cin >> height;
+				std::cout << "Kernel width: ";
+				std::cin >> width;
+				Mat kernelMat(height, width, CV_8UC1, 255);
+				for (int i = 0; i < height; i++) {
+					for (int j = 0; j < width; j++) {
+						std::cout << "Kernel(i = " << i << ", j = " << j << "): ";
+						std::cin >> kernelMat.at<uchar>(i, j);
+					}
+				}
+				Point kernelPoint;
+				std::cout << "Kernel origin (i, j): ";
+				std::cin >> kernelPoint.y >> kernelPoint.x;
+				Kernel kernel(kernelMat, kernelPoint);
+				fillFromMorph(kernel, p);
+			}
+			else {
+				fillFromMorph(static_cast<KernelType>(kernelType4), p);
 			}
 			break;
 		}
