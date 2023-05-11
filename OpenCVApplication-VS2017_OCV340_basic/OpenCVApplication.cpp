@@ -5,7 +5,7 @@
 #include "common.h"
 #include <vector>
 #include <sstream>
-#include <string>
+#include <random>
 
 
 void testOpenImage()
@@ -563,7 +563,7 @@ float determinant(Mat a, float k)
 	int i, j, m, n, c;
 	if (k == 1)
 	{
-		return a.at<float>(0,0);
+		return a.at<float>(0, 0);
 	}
 	else
 	{
@@ -590,14 +590,14 @@ float determinant(Mat a, float k)
 					}
 				}
 			}
-			det = det + s * (a.at<float>(0,c) * determinant(b, k - 1));
+			det = det + s * (a.at<float>(0, c) * determinant(b, k - 1));
 			s = -1 * s;
 		}
 	}
 	return (det);
 }
 
-///function to find the transpose of a matrix
+// function to find the transpose of a matrix
 Mat tp(Mat num, Mat fac, float r)
 {
 	int i, j;
@@ -620,7 +620,7 @@ Mat tp(Mat num, Mat fac, float r)
 // function for cofactor calculation
 Mat cofactor(Mat num, float f)
 {
-	Mat b(3,3,CV_32FC1), fac(3, 3, CV_32FC1);
+	Mat b(3, 3, CV_32FC1), fac(3, 3, CV_32FC1);
 	int p, q, m, n, i, j;
 	for (q = 0; q < f; q++)
 	{
@@ -645,7 +645,7 @@ Mat cofactor(Mat num, float f)
 					}
 				}
 			}
-			fac.at<float>(q,p) = pow(-1, q + p) * determinant(b, f - 1);
+			fac.at<float>(q, p) = pow(-1, q + p) * determinant(b, f - 1);
 		}
 	}
 	return tp(num, fac, f);
@@ -786,7 +786,7 @@ void convertGrayToBinary(uchar threshold) {
 	}
 }
 
-//2.7.4
+// 2.7.4
 double minVec(std::vector<double> vals) {
 	double min = 255;
 	int size = vals.size();
@@ -835,20 +835,20 @@ void convertBGRToHSVAndDisplay() {
 				double min{ minVec(channels) };
 				double max{ maxVec(channels) };
 				double contrast = max - min;
-				
+
 				//V
 				double val{ max };
 				double sat{ val != 0.0 ? contrast / val : 0.0 };
-				double hue{0.0};
+				double hue{ 0.0 };
 
 				if (contrast != 0) {
 					if (max == r) {
 						hue = 60 * (g - b) / contrast;
 					}
-					else if(max == g) {
+					else if (max == g) {
 						hue = 120 + 60 * (b - r) / contrast;
 					}
-					else{
+					else {
 						hue = 240 + 60 * (r - g) / contrast;
 					}
 				}
@@ -875,9 +875,9 @@ void convertBGRToHSVAndDisplay() {
 	}
 }
 
-//2.7.5
+// 2.7.5
 bool isInside(Mat img, int i, int j) {
-	return i >= 0 && i < img.rows && j >= 0 && j < img.cols;
+	return i >= 0 && i < img.rows&& j >= 0 && j < img.cols;
 }
 
 void testIsInside(int i, int j) {
@@ -894,7 +894,7 @@ void testIsInside(int i, int j) {
 }
 
 
-//3.6.1 && 3.6.2 && 3.6.3 && 3.6.4 && 3.6.5 && 3.6.6
+// 3.6.1 && 3.6.2 && 3.6.3 && 3.6.4 && 3.6.5 && 3.6.6
 std::vector<double> computeFDP(std::vector<int> hist, int M) {
 	std::vector<double> fdp;
 	for (int i = 0; i < hist.size(); i++) {
@@ -954,7 +954,7 @@ void computeHistogram(const int bins) {
 			std::vector<int> pixelMap(256, 0);
 			int index{ 0 };
 			for (int i = 0; i < 256; i++) {
-				if (index < peaks.size() - 1 && abs(i - peaks.at(index)) > abs(i - peaks.at(index +1))) {
+				if (index < peaks.size() - 1 && abs(i - peaks.at(index)) > abs(i - peaks.at(index + 1))) {
 					++index;
 				}
 				pixelMap.at(i) = peaks.at(index);
@@ -1003,6 +1003,7 @@ void computeHistogram(const int bins) {
 	}
 }
 
+// 3.6.7
 void reduceHSV() {
 	char fname[MAX_PATH];
 	std::vector<int> hist(256, 0);
@@ -1023,7 +1024,7 @@ void reduceHSV() {
 			}
 		}
 		std::vector<double> fdp = computeFDP(hist, height * width);
-			
+
 		std::vector<int> peaks = computeThresholds(fdp);
 		std::vector<int> pixelMap(256, 0);
 		int index{ 0 };
@@ -1056,6 +1057,544 @@ void reduceHSV() {
 }
 
 
+// 4.4.1
+int computeArea(Mat* src, Vec3b objectPixel) {
+	int width{ src->cols };
+	int height{ src->rows };
+	int area = 0;
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			if ((*src).at<Vec3b>(i, j) == objectPixel) {
+				++area;
+			}
+		}
+	}
+	return area;
+}
+
+Point computeCenterOfMass(Mat* src, Vec3b objectPixel, Mat* modified = nullptr) {
+	int width{ src->cols };
+	int height{ src->rows };
+	int area{ computeArea(src, objectPixel) };
+	int rbara{ 0 }, cbara{ 0 };
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			if ((*src).at<Vec3b>(i, j) == objectPixel) {
+				rbara += i;
+				cbara += j;
+			}
+		}
+	}
+	rbara /= area;
+	cbara /= area;
+	if (modified != nullptr) {
+		line(*modified, Point(cbara, rbara), Point(cbara, rbara), Scalar(0, 0, 255), 5);
+	}
+	//modified->at<Vec3b>(rbara, cbara) = Vec3b(0, 0, 255);
+	return Point(cbara, rbara);
+}
+
+double computeElongationAxisAngle(Mat* src, Vec3b objectPixel, Mat* modified = nullptr) {
+	int width{ src->cols };
+	int height{ src->rows };
+	int area{ computeArea(src, objectPixel) };
+	Point centerOfMass{ computeCenterOfMass(src, objectPixel, modified) };
+	const int LINE_WIDTH{ 100 };
+	int64_t sum1{ 0 }, sum2{ 0 }, sum3{ 0 };
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			if ((*src).at<Vec3b>(i, j) == objectPixel) {
+				sum1 += (i - centerOfMass.y) * (j - centerOfMass.x);
+				sum2 += (j - centerOfMass.x) * (j - centerOfMass.x);
+				sum3 += (i - centerOfMass.y) * (i - centerOfMass.y);
+			}
+		}
+	}
+	double elongationAxisAngle = atan2(2 * sum1, sum2 - sum3);
+	if (modified != nullptr) {
+		Point p1((int)(centerOfMass.x - LINE_WIDTH / 2 * cos(elongationAxisAngle / 2)), (int)(centerOfMass.y - LINE_WIDTH / 2 * sin(elongationAxisAngle / 2)));
+		Point p2((int)(centerOfMass.x + LINE_WIDTH / 2 * cos(elongationAxisAngle / 2)), (int)(centerOfMass.y + LINE_WIDTH / 2 * sin(elongationAxisAngle / 2)));
+		line(*modified, p1, p2, Scalar(255, 255, 0), 1);
+	}
+	return atan2(2 * sum1, sum2 - sum3);
+}
+
+int computePerimeter(Mat* src, Vec3b objectPixel, Mat* modified) {
+	int width{ src->cols };
+	int height{ src->rows };
+	int perimeter{ 0 };
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			if ((*src).at<Vec3b>(i, j) == objectPixel) {
+				if ((*src).at<Vec3b>(i + 1, j) != objectPixel ||
+					(*src).at<Vec3b>(i, j + 1) != objectPixel ||
+					(*src).at<Vec3b>(i - 1, j) != objectPixel ||
+					(*src).at<Vec3b>(i, j - 1) != objectPixel) {
+					++perimeter;
+					modified->at<Vec3b>(i, j) = Vec3b(255, 0, 255);
+					modified->at<Vec3b>(i, j + 1) = Vec3b(255, 0, 255);
+					modified->at<Vec3b>(i, j - 1) = Vec3b(255, 0, 255);
+					modified->at<Vec3b>(i + 1, j) = Vec3b(255, 0, 255);
+					modified->at<Vec3b>(i - 1, j) = Vec3b(255, 0, 255);
+				}
+			}
+		}
+	}
+	return perimeter;
+}
+
+double computeAspectRatio(Mat* src, Vec3b objectPixel) {
+	int width{ src->cols };
+	int height{ src->rows };
+	int rmin{ height }, rmax{ 0 }, cmin{ width }, cmax{ 0 };
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			if ((*src).at<Vec3b>(i, j) == objectPixel) {
+				if (i < rmin) {
+					rmin = i;
+				}
+				if (i > rmax) {
+					rmax = i;
+				}
+				if (j < cmin) {
+					cmin = j;
+				}
+				if (j > cmax) {
+					cmax = j;
+				}
+			}
+		}
+	}
+	return ((cmax - cmin) + 1.0) / ((rmax - rmin) + 1.0);
+}
+
+void computeProjections(Mat* src, Vec3b objectPixel) {
+	int width{ src->cols };
+	int height{ src->rows };
+	int max_orizontala{ 0 };
+	int max_verticala{ 0 };
+	std::vector<int> ap_orizontala(width, 0);
+	std::vector<int> ap_verticala(height, 0);
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			if (src->at<Vec3b>(i, j) == objectPixel) {
+				++ap_orizontala.at(j);
+				++ap_verticala.at(i);
+				if (max_orizontala < ap_orizontala.at(j)) {
+					max_orizontala = ap_orizontala.at(j);
+				}
+				if (max_verticala < ap_verticala.at(i)) {
+					max_verticala = ap_verticala.at(i);
+				}
+			}
+		}
+	}
+	Mat proiectie_orizontala = Mat(max_orizontala, width, CV_8UC3);
+	Mat proiectie_verticala = Mat(height, max_verticala, CV_8UC3);
+	for (int i = 0; i < width; i++) {
+		for (int j = 0; j < ap_orizontala.at(i); j++) {
+			proiectie_orizontala.at<Vec3b>(max_orizontala - j - 1, i) = objectPixel;
+		}
+	}
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < ap_verticala.at(i); j++) {
+			proiectie_verticala.at<Vec3b>(i, max_verticala - j - 1) = objectPixel;
+		}
+	}
+	imshow("Proiectie orizontala", proiectie_orizontala);
+	imshow("Proiectie verticala", proiectie_verticala);
+}
+
+// 4.4.2
+void copyAllPixels(Mat src, Mat* dest, Vec3b pixel) {
+	int width{ src.cols };
+	int height{ src.rows };
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			if (src.at<Vec3b>(i, j) == pixel) {
+				dest->at<Vec3b>(i, j) = pixel;
+			}
+		}
+	}
+}
+
+void filterImage(int min_area, double min_phi, double max_phi) {
+	const Vec3b background_pixel(255, 255, 255);
+	char fname[MAX_PATH];
+	if (openFileDlg(fname))
+	{
+		Mat src = imread(fname, CV_LOAD_IMAGE_COLOR);
+		int width{ src.cols };
+		int height{ src.rows };
+		std::vector<Vec3b> labels;
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				Vec3b pixel = src.at<Vec3b>(i, j);
+				if (pixel != background_pixel) {
+					if (std::find(labels.begin(), labels.end(), pixel) == labels.end()) {
+						labels.push_back(pixel);
+					}
+				}
+			}
+		}
+
+		Mat filtered = Mat(height, width, CV_8UC3, Vec3b(255, 255, 255));
+		std::vector<Vec3b>::iterator it;
+		for (int i = 0; i < labels.size(); i++) {
+			int area = computeArea(&src, labels.at(i));
+			double phi = computeElongationAxisAngle(&src, labels.at(i));
+			if (area > min_area && phi > min_phi && phi < max_phi) {
+				copyAllPixels(src, &filtered, labels.at(i));
+			}
+		}
+
+		imshow("Original", src);
+		imshow("Filtered", filtered);
+		waitKey();
+	}
+}
+
+void mouseCallbackGeometry(int event, int x, int y, int flags, void* param) {
+	Mat* src = (Mat*)param;
+	Mat modified = src->clone();
+	if (event == CV_EVENT_LBUTTONDOWN)
+	{
+		printf("\nPos(x,y): %d,%d  Color(RGB): %d,%d,%d\n",
+			x, y,
+			(int)(*src).at<Vec3b>(y, x)[2],
+			(int)(*src).at<Vec3b>(y, x)[1],
+			(int)(*src).at<Vec3b>(y, x)[0]);
+
+		int width{ src->cols };
+		int height{ src->rows };
+		Vec3b pixel{ (*src).at<Vec3b>(y, x) };
+
+		//Area
+		int area{ computeArea(src, pixel) };
+		//Perimeter
+		int perimeter{ computePerimeter(src, pixel, &modified) };
+		//Elongation axis
+		double elongationAxisAngle{ computeElongationAxisAngle(src, pixel, &modified) };
+		//Center of mass
+		Point centerOfMass{ computeCenterOfMass(src, pixel, &modified) };
+		//Thinness ratio
+		double thinnessRatio{ 4 * PI * area / (perimeter * perimeter) };
+		//Aspect ratio
+		double aspectRatio{ computeAspectRatio(src, pixel) };
+		//Projections
+		computeProjections(src, pixel);
+
+		printf("Area: %d\n", area);
+		printf("Center of mass (x, y): %d, %d\n", centerOfMass.x, centerOfMass.y);
+		printf("Elongation axis: %lf\n", elongationAxisAngle);
+		printf("Perimeter: %d\n", perimeter);
+		printf("Thinness ratio: %lf\n", thinnessRatio);
+		printf("Aspect ratio: %lf\n", aspectRatio);
+
+		imshow("Modified", modified);
+	}
+}
+
+void computeGeometry() {
+	char fname[MAX_PATH];
+	openFileDlg(fname);
+	Mat src = imread(fname, CV_LOAD_IMAGE_COLOR);
+	namedWindow("Geometry", 1);
+	setMouseCallback("Geometry", mouseCallbackGeometry, &src);
+	imshow("Geometry", src);
+	waitKey(0);
+}
+
+
+
+// 5.5.1 & 5.5.2
+struct Adiacent {
+	int n{};
+	int* di;
+	int* dj;
+};
+
+enum TipAdicenta {
+	N4, 
+	N8,
+	ANTERIORI,
+	CUSTOM
+};
+
+void bfs(const Mat& src, const Adiacent& adiacenta, int** visited, int class_index, std::pair<int, int> startingPosition) {
+	std::queue<std::pair<int, int>> queue;
+	queue.push(startingPosition);
+	visited[startingPosition.first][startingPosition.second] = class_index;
+	while (!queue.empty()) {
+		std::pair<int, int> current = queue.front();
+		queue.pop();
+		//std::cout << "(" << current.first << ", " << current.second << "), visited: " << visited[current.first][current.second] << ":\n";
+		for (int i = 0; i < adiacenta.n; i++) {
+			int newRow = current.first + adiacenta.di[i];
+			int newCol = current.second + adiacenta.dj[i];
+			//std::cout << "	(" << newRow << ", " << newCol << "), visited: " << visited[newRow][newCol] << '\n';
+			if (isInside(src, newRow, newCol) && src.at<uchar>(newRow, newCol) == 0 && visited[newRow][newCol] == 0) {
+				queue.push(std::pair<int, int>(newRow, newCol));
+				visited[newRow][newCol] = class_index;
+			}
+		}
+	}
+}
+
+void labelImageBfs(const Adiacent& ad) {
+	const Vec3b background_pixel(255, 255, 255);
+	char fname[MAX_PATH];
+	if (openFileDlg(fname))
+	{
+		Mat src{ imread(fname, CV_LOAD_IMAGE_GRAYSCALE) };
+		int width{ src.cols };
+		int height{ src.rows };
+		
+		Adiacent adiacent = ad;
+
+		int** visited = new int*[height];
+		for (int i = 0; i < height; i++) {
+			visited[i] = new int[width] {};
+		}
+
+		int class_index{ 1 };
+
+		std::default_random_engine gen;
+		std::uniform_int_distribution<int> d(0, 255);
+
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				if (src.at<uchar>(i, j) == 0 && !visited[i][j]) {
+					bfs(src, adiacent, visited, class_index, std::pair<int, int>(i, j));
+					++class_index;
+				}
+			}
+		}
+
+		Vec3b* array{ new Vec3b[class_index] };
+
+		for (int i = 0; i < class_index; i++) {
+			array[i] = Vec3b(d(gen), d(gen), d(gen));
+		}
+
+		Mat labeled{ Mat(height, width, CV_8UC3) };
+
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				if (visited[i][j]) {
+					labeled.at<Vec3b>(i, j) = array[visited[i][j]];
+				}
+				else {
+					labeled.at<Vec3b>(i, j) = Vec3b(255, 255, 255);
+				}
+			}
+		}
+
+		imshow("Original", src);
+		imshow("Labeled", labeled);
+		waitKey(0);
+	}
+}
+
+void labelImageBfs(int tip_adiacent) {
+	Adiacent adiacent;
+	int di1[]{ 1, 0, -1, 0 };
+	int dj1[]{ 0, 1, 0, -1 };
+	int di2[]{ 1, 1, 1, 0, 0,-1,-1,-1 };
+	int dj2[]{ 1, 0,-1, 1,-1, 1, 0,-1 };
+	int di3[]{ 0,-1,-1,-1 };
+	int dj3[]{ -1, 1, 0,-1 };
+	switch (tip_adiacent) {
+	case N4:
+		adiacent.n = 4;
+		adiacent.di = di1;
+		adiacent.dj = dj1;
+		break;
+	case N8:
+		adiacent.n = 8;
+		adiacent.di = di2;
+		adiacent.dj = dj2;
+		break;
+	case ANTERIORI:
+		adiacent.n = 8;
+		adiacent.di = di3;
+		adiacent.dj = dj3;
+		break;
+	}
+	labelImageBfs(adiacent);
+}
+
+// 5.5.3
+class DisjointSet {
+private:
+	DisjointSet* m_parent{};
+	int m_rank{};
+	int m_value{};
+public:
+
+	DisjointSet(DisjointSet* parent, int rank, int value):
+		m_parent{parent}, m_rank{rank}, m_value{value}
+	{
+	}
+
+	DisjointSet(int value):
+		m_parent{this}, m_rank{0}, m_value{value}
+	{
+	}
+
+	int getValue() {
+		return m_value;
+	}
+
+	void setValue(int value) {
+		m_value = value;
+	}
+
+	void unionSet(DisjointSet* ds) {
+		this->findSet()->link(ds->findSet());
+	}
+
+	void link(DisjointSet* ds) {
+		if (m_rank > ds->m_rank) {
+			ds->m_parent = this;
+		}
+		else {
+			m_parent = ds;
+			if (m_rank == ds->m_rank) {
+				ds->m_rank++;
+			}
+		}
+	}
+
+	DisjointSet* findSet() {
+		DisjointSet* ds = this;
+		while (ds != ds->m_parent) {
+			ds = ds->m_parent;
+		}
+
+		DisjointSet* ds2 = this;
+		while (ds2->m_parent != ds2->m_parent->m_parent) {
+			DisjointSet* ds2_old_parent = ds2->m_parent;
+			ds2->m_parent = ds;
+			ds2 = ds2_old_parent;
+		}
+		return ds;
+	}
+};
+
+void labelImage2Pass(const Adiacent& ad) {
+	const Vec3b background_pixel(255, 255, 255);
+	char fname[MAX_PATH];
+
+	std::ofstream out("out.txt");
+	std::streambuf* coutbuf = std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt
+
+	if (openFileDlg(fname))
+	{
+		Mat src{ imread(fname, CV_LOAD_IMAGE_GRAYSCALE) };
+		int width{ src.cols };
+		int height{ src.rows };
+
+		Adiacent adiacent = ad;
+
+		DisjointSet*** visited = new DisjointSet** [height];
+		for (int i = 0; i < height; i++) {
+			visited[i] = new DisjointSet*[width] {};
+		}
+
+		std::default_random_engine gen;
+		std::uniform_int_distribution<int> d(0, 255);
+
+		std::vector<DisjointSet*> dsVector;
+
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				if (src.at<uchar>(i, j) == 0 && !visited[i][j]) {
+					bool labelPresent = false;
+					DisjointSet* minimum{};
+					for (int k = 0; k < adiacent.n; k++) {
+						if (isInside(height, width, i + adiacent.di[k], j + adiacent.dj[k]) && visited[i + adiacent.di[k]][j + adiacent.dj[k]]) {
+							if (!labelPresent || minimum->findSet()->getValue() > visited[i + adiacent.di[k]][j + adiacent.dj[k]]->findSet()->getValue()) {
+								if (minimum) {
+									minimum->unionSet(visited[i + adiacent.di[k]][j + adiacent.dj[k]]);
+								}
+								minimum = visited[i + adiacent.di[k]][j + adiacent.dj[k]];
+							}
+							if (minimum != visited[i + adiacent.di[k]][j + adiacent.dj[k]]) {
+								visited[i + adiacent.di[k]][j + adiacent.dj[k]]->unionSet(minimum);
+							}
+							labelPresent = true;
+						}
+					}
+					if (labelPresent) {
+						visited[i][j] = minimum;
+					}
+					else {
+						DisjointSet* ds = new DisjointSet(dsVector.size() + 1);
+						visited[i][j] = ds;
+						dsVector.push_back(ds);
+					}
+				}
+			}
+		}
+
+		Vec3b* array{ new Vec3b[dsVector.size()] };
+		for (int i = 0; i < dsVector.size(); i++) {
+			array[i] = Vec3b(d(gen), d(gen), d(gen));
+		}
+
+		Mat labeled{ Mat(height, width, CV_8UC3) };
+
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				if (visited[i][j]) {
+					labeled.at<Vec3b>(i, j) = array[visited[i][j]->findSet()->getValue()];
+				}
+				else {
+					labeled.at<Vec3b>(i, j) = Vec3b(255, 255, 255);
+				}
+			}
+		}
+
+		for (DisjointSet* dsp : dsVector) {
+			delete dsp;
+		}
+
+		imshow("Original", src);
+		imshow("Labeled", labeled);
+		waitKey(0);
+	}
+
+	std::cout.rdbuf(coutbuf);
+}
+
+void labelImage2Pass(int tip_adiacent) {
+	Adiacent adiacent;
+	int di1[]{ 1, 0, -1, 0 };
+	int dj1[]{ 0, 1, 0, -1 };
+	int di2[]{ 1, 1, 1, 0, 0,-1,-1,-1 };
+	int dj2[]{ 1, 0,-1, 1,-1, 1, 0,-1 };
+	int di3[]{ 0,-1,-1,-1 };
+	int dj3[]{ -1, 1, 0,-1 };
+	switch (tip_adiacent) {
+	case N4:
+		adiacent.n = 4;
+		adiacent.di = di1;
+		adiacent.dj = dj1;
+		break;
+	case N8:
+		adiacent.n = 8;
+		adiacent.di = di2;
+		adiacent.dj = dj2;
+		break;
+	case ANTERIORI:
+		adiacent.n = 8;
+		adiacent.di = di3;
+		adiacent.dj = dj3;
+		break;
+	}
+	labelImage2Pass(adiacent);
+}
 
 int main()
 {
@@ -1066,7 +1605,7 @@ int main()
 		destroyAllWindows();
 		printf("Menu:\n");
 		printf(" 1 - Open image\n");
-		printf(" 2 - Open BMP images from folder\n");
+		printf(" 2 - Open BMP images afrom folder\n");
 		printf(" 3 - Image negative - diblook style\n");
 		printf(" 4 - BGR->HSV\n");
 		printf(" 5 - Resize image\n");
@@ -1085,10 +1624,15 @@ int main()
 		printf(" 18 - 2.7.5 (IsInside test)\n");
 		printf(" 19 - 3.6.1 && 3.6.2 && 3.6.3 && 3.6.4 (Histogram (bins <= 256) + FDP)\n");
 		printf(" 20 - 3.6.5 && 3.6.6 (Grayscale levels reducing)\n");
-		printf(" 21 - 3.6.7 (HSV H reducing)");
+		printf(" 21 - 3.6.7 (HSV H reducing)\n");
+		printf(" 22 - 4.4.1 (Geometry)\n");
+		printf(" 23 - 4.4.2 (Filtering based on area and elongation angle)\n");
+		printf(" 24 - 5.5.1 & 5.5.2 (Labeling using BFS)\n");
+		printf(" 25 - 5.5.3 (Labeling using 2 passes and Disjoint sets)\n");
 		printf(" 0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
+		std::vector<int> hist(256, 0);
 		switch (op)
 		{
 		case 1:
@@ -1172,6 +1716,67 @@ int main()
 			break;
 		case 21:
 			reduceHSV();
+			break;
+		case 22:
+			computeGeometry();
+			break;
+		case 23:
+			int min_area;
+			std::cout << "Minimum area: ";
+			std::cin >> min_area;
+			double min_phi, max_phi;
+			std::cout << "Minimum, maximum phi: ";
+			std::cin >> min_phi >> max_phi;
+			filterImage(min_area, min_phi, max_phi);
+			break;
+		case 24:
+			int tip_ad_bfs;
+			std::cout << "Choose type of vicinity (0 - N4, 1 - N8, 2 - PREVIOUS, 3 - CUSTOM): ";
+			std::cin >> tip_ad_bfs;
+			if (tip_ad_bfs == 3) {
+				Adiacent adiacent;
+				std::cout << "Input number of adiacent cells: ";
+				std::cin >> adiacent.n;
+				adiacent.di = new int[adiacent.n];
+				adiacent.dj = new int[adiacent.n];
+				std::cout << "Input di: ";
+				for (int i = 0; i < adiacent.n; i++) {
+					std::cin >> adiacent.di[i];
+				}
+				std::cout << "Input dj: ";
+				for (int i = 0; i < adiacent.n; i++) {
+					std::cin >> adiacent.dj[i];
+				}
+				labelImageBfs(adiacent);
+			}
+			else {
+				labelImageBfs(tip_ad_bfs);
+			}
+			break;
+		case 25:
+			int tip_ad_2pass;
+			std::cout << "Choose type of vicinity (0 - N4, 1 - N8, 2 - PREVIOUS, 3 - CUSTOM): ";
+			std::cin >> tip_ad_2pass;
+			if (tip_ad_2pass == 3) {
+				Adiacent adiacent;
+				std::cout << "Input number of adiacent cells: ";
+				std::cin >> adiacent.n;
+				adiacent.di = new int[adiacent.n];
+				adiacent.dj = new int[adiacent.n];
+				std::cout << "Input di: ";
+				for (int i = 0; i < adiacent.n; i++) {
+					std::cin >> adiacent.di[i];
+				}
+				std::cout << "Input dj: ";
+				for (int i = 0; i < adiacent.n; i++) {
+					std::cin >> adiacent.dj[i];
+				}
+				labelImage2Pass(adiacent);
+			}
+			else {
+				labelImage2Pass(tip_ad_2pass);
+			}
+			break;
 		}
 	} while (op != 0);
 	return 0;
