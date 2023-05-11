@@ -421,6 +421,8 @@ void showHistogram(const std::string& name, int* hist, const int  hist_cols, con
 	imshow(name, imgHist);
 }
 
+
+//--------------------------------------------------- L1 ---------------------------------------------------
 void testAdditiveImage(int factor) {
 	char fname[MAX_PATH];
 	while (openFileDlg(fname))
@@ -672,6 +674,224 @@ void inverseMatrix() {
 	getchar();
 }
 
+
+
+//--------------------------------------------------- L2 ---------------------------------------------------
+// 2.7.1
+void displayChannels() {
+	char fname[MAX_PATH];
+	while (openFileDlg(fname))
+	{
+		double t = (double)getTickCount(); // Get the current time [s]
+
+		Mat src = imread(fname, CV_LOAD_IMAGE_COLOR);
+		int height = src.rows;
+		int width = src.cols;
+		Mat b = Mat(height, width, CV_8UC1);
+		Mat g = Mat(height, width, CV_8UC1);
+		Mat r = Mat(height, width, CV_8UC1);
+		// Asa se acceseaaza pixelii individuali pt. o imagine cu 8 biti/pixel
+		// Varianta ineficienta (lenta)
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				Vec3b pixel = src.at<Vec3b>(i, j);
+				b.at<uchar>(i, j) = pixel[0];
+				g.at<uchar>(i, j) = pixel[1];
+				r.at<uchar>(i, j) = pixel[2];
+			}
+		}
+
+		// Get the current time again and compute the time difference [s]
+		t = ((double)getTickCount() - t) / getTickFrequency();
+		// Print (in the console window) the processing time in [ms] 
+		printf("Time = %.3f [ms]\n", t * 1000);
+
+		imshow("input image", src);
+		imshow("b channel", b);
+		imshow("g channel", g);
+		imshow("r channel", r);
+		waitKey();
+	}
+}
+
+// 2.7.2
+void convertBGRToGray() {
+	char fname[MAX_PATH];
+	while (openFileDlg(fname))
+	{
+		double t = (double)getTickCount(); // Get the current time [s]
+
+		Mat src = imread(fname, CV_LOAD_IMAGE_COLOR);
+		int height = src.rows;
+		int width = src.cols;
+		Mat gray = Mat(height, width, CV_8UC1);
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				Vec3b pixel = src.at<Vec3b>(i, j);
+				gray.at<uchar>(i, j) = (pixel[0] + pixel[1] + pixel[2]) / 3;
+			}
+		}
+
+		// Get the current time again and compute the time difference [s]
+		t = ((double)getTickCount() - t) / getTickFrequency();
+		// Print (in the console window) the processing time in [ms] 
+		printf("Time = %.3f [ms]\n", t * 1000);
+
+		imshow("input image", src);
+		imshow("converted image ", gray);
+		waitKey();
+	}
+}
+
+// 2.7.3
+void convertGrayToBinary(uchar threshold) {
+	char fname[MAX_PATH];
+	while (openFileDlg(fname))
+	{
+		double t = (double)getTickCount(); // Get the current time [s]
+
+		Mat src = imread(fname, CV_LOAD_IMAGE_GRAYSCALE);
+		int height = src.rows;
+		int width = src.cols;
+		Mat binarized = Mat(height, width, CV_8UC1);
+		// Asa se acceseaaza pixelii individuali pt. o imagine cu 8 biti/pixel
+		// Varianta ineficienta (lenta)
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				uchar pixel = src.at<uchar>(i, j);
+				if (pixel < threshold) {
+					binarized.at<uchar>(i, j) = 0;
+				}
+				else {
+					binarized.at<uchar>(i, j) = 255;
+				}
+			}
+		}
+
+		// Get the current time again and compute the time difference [s]
+		t = ((double)getTickCount() - t) / getTickFrequency();
+		// Print (in the console window) the processing time in [ms] 
+		printf("Time = %.3f [ms]\n", t * 1000);
+
+		imshow("input image", src);
+		imshow("binarized image ", binarized);
+		waitKey();
+	}
+}
+
+//2.7.4
+double minVec(std::vector<double> vals) {
+	double min = 255;
+	int size = vals.size();
+	for (int i = 0; i < size; i++) {
+		if (min > vals.at(i)) {
+			min = vals.at(i);
+		}
+	}
+	return min;
+}
+
+double maxVec(std::vector<double> vals) {
+	double max = 0;
+	int size = vals.size();
+	for (int i = 0; i < size; i++) {
+		if (max < vals.at(i)) {
+			max = vals.at(i);
+		}
+	}
+	return max;
+}
+
+void convertBGRToHSVAndDisplay() {
+	char fname[MAX_PATH];
+	while (openFileDlg(fname))
+	{
+		double t = (double)getTickCount(); // Get the current time [s]
+
+		Mat src = imread(fname, CV_LOAD_IMAGE_COLOR);
+		int height = src.rows;
+		int width = src.cols;
+		Mat h = Mat(height, width, CV_8UC1);
+		Mat s = Mat(height, width, CV_8UC1);
+		Mat v = Mat(height, width, CV_8UC1);
+		// Asa se acceseaaza pixelii individuali pt. o imagine cu 8 biti/pixel
+		// Varianta ineficienta (lenta)
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				Vec3b pixel = src.at<Vec3b>(i, j);
+				double r{ pixel[2] / 255.0 };
+				double g{ pixel[1] / 255.0 };
+				double b{ pixel[0] / 255.0 };
+				std::vector<double> channels{ r, g, b };
+				double min{ minVec(channels) };
+				double max{ maxVec(channels) };
+				double contrast = max - min;
+				
+				//V
+				double val{ max };
+				double sat{ val != 0.0 ? contrast / val : 0.0 };
+				double hue{0.0};
+
+				if (contrast != 0) {
+					if (max == r) {
+						hue = 60 * (g - b) / contrast;
+					}
+					else if(max == g) {
+						hue = 120 + 60 * (b - r) / contrast;
+					}
+					else{
+						hue = 240 + 60 * (r - g) / contrast;
+					}
+				}
+				if (hue < 0) {
+					hue += 360;
+				}
+
+				h.at<uchar>(i, j) = static_cast<uchar>(hue * 255 / 360);
+				s.at<uchar>(i, j) = static_cast<uchar>(sat * 255);
+				v.at<uchar>(i, j) = static_cast<uchar>(val * 255);
+			}
+		}
+
+		// Get the current time again and compute the time difference [s]
+		t = ((double)getTickCount() - t) / getTickFrequency();
+		// Print (in the console window) the processing time in [ms] 
+		printf("Time = %.3f [ms]\n", t * 1000);
+
+		imshow("input image", src);
+		imshow("h channel", h);
+		imshow("s channel", s);
+		imshow("v channel", v);
+		waitKey();
+	}
+}
+
+//2.7.5
+bool isInside(Mat img, int i, int j) {
+	return i >= 0 && i < img.rows && j >= 0 && j < img.cols;
+}
+
+void testIsInside(int i, int j) {
+	char fname[MAX_PATH];
+	while (openFileDlg(fname))
+	{
+
+		Mat src = imread(fname, CV_LOAD_IMAGE_COLOR);
+		printf("Is the coordinate at (i, j) inside the image: %s", isInside(src, i, j) == 1 ? "yes" : "no");
+
+		getchar();
+		getchar();
+	}
+}
+
 int main()
 {
 	int op;
@@ -689,10 +909,15 @@ int main()
 		printf(" 7 - Edges in a video sequence\n");
 		printf(" 8 - Snap frame from live video\n");
 		printf(" 9 - Mouse callback demo\n");
-		printf(" 10 - Image intensity increase\n");
-		printf(" 11 - Image contrast increase\n");
-		printf(" 12 - Display flag\n");
-		printf(" 13 - Matrix inverse\n");
+		printf(" 10 - 1.10.3 Image intensity increase\n");
+		printf(" 11 - 1.10.4 Image contrast increase\n");
+		printf(" 12 - 1.10.5 Display flag\n");
+		printf(" 13 - 1.10.6 Matrix inverse\n");
+		printf(" 14 - 2.7.1 (Color to R, G, B channels)\n");
+		printf(" 15 - 2.7.2 (Color to Grayscale)\n");
+		printf(" 16 - 2.7.3 (Grayscale to binary)\n");
+		printf(" 17 - 2.7.4 (Color to H, S, V channels)\n");
+		printf(" 18 - 2.7.5 (IsInside test)\n");
 		printf(" 0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
@@ -743,6 +968,31 @@ int main()
 			break;
 		case 13:
 			inverseMatrix();
+			break;
+		case 14:
+			displayChannels();
+			break;
+		case 15:
+			convertBGRToGray();
+			break;
+		case 16:
+			printf("Threshold: ");
+			uchar threshold;
+			scanf("%d", &threshold);
+			convertGrayToBinary(threshold);
+			break;
+		case 17:
+			convertBGRToHSVAndDisplay();
+			break;
+		case 18:
+			printf("i: ");
+			int i;
+			scanf("%d", &i);
+			printf("j: ");
+			int j;
+			scanf("%d", &j);
+			testIsInside(i, j);
+			break;
 		}
 	} while (op != 0);
 	return 0;
