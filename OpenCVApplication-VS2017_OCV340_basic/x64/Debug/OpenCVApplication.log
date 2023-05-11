@@ -1,0 +1,39 @@
+﻿  OpenCVApplication.cpp
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(645,40): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(653,30): warning C4305: '=': truncation from 'double' to '_Tp'
+          with
+          [
+              _Tp=float
+          ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(655,30): warning C4305: '=': truncation from 'double' to '_Tp'
+          with
+          [
+              _Tp=float
+          ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(657,30): warning C4305: '=': truncation from 'double' to '_Tp'
+          with
+          [
+              _Tp=float
+          ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(658,31): warning C4305: '=': truncation from 'double' to '_Tp'
+          with
+          [
+              _Tp=float
+          ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(659,30): warning C4305: '=': truncation from 'double' to '_Tp'
+          with
+          [
+              _Tp=float
+          ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(732,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(732,10): message : consider using '%hhd' in the format string
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(738,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(738,10): message : consider using '%hhd' in the format string
+  OpenCVApplication.vcxproj -> D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\L1\OpenCVApplication-VS2017_OCV340_basic\x64\Debug\OpenCVApplication.exe
+  OpenCV\dll\Debug\opencv_ffmpeg340_64.dll
+  OpenCV\dll\Debug\opencv_world340d.dll
+          2 file(s) copied.
