@@ -5,6 +5,7 @@
 #include "common.h"
 #include <vector>
 #include <sstream>
+#include <string>
 
 
 void testOpenImage()
@@ -562,7 +563,7 @@ float determinant(Mat a, float k)
 	int i, j, m, n, c;
 	if (k == 1)
 	{
-		return a.at<float>(0,0);
+		return a.at<float>(0, 0);
 	}
 	else
 	{
@@ -589,7 +590,7 @@ float determinant(Mat a, float k)
 					}
 				}
 			}
-			det = det + s * (a.at<float>(0,c) * determinant(b, k - 1));
+			det = det + s * (a.at<float>(0, c) * determinant(b, k - 1));
 			s = -1 * s;
 		}
 	}
@@ -619,7 +620,7 @@ Mat tp(Mat num, Mat fac, float r)
 // function for cofactor calculation
 Mat cofactor(Mat num, float f)
 {
-	Mat b(3,3,CV_32FC1), fac(3, 3, CV_32FC1);
+	Mat b(3, 3, CV_32FC1), fac(3, 3, CV_32FC1);
 	int p, q, m, n, i, j;
 	for (q = 0; q < f; q++)
 	{
@@ -644,7 +645,7 @@ Mat cofactor(Mat num, float f)
 					}
 				}
 			}
-			fac.at<float>(q,p) = pow(-1, q + p) * determinant(b, f - 1);
+			fac.at<float>(q, p) = pow(-1, q + p) * determinant(b, f - 1);
 		}
 	}
 	return tp(num, fac, f);
@@ -834,20 +835,20 @@ void convertBGRToHSVAndDisplay() {
 				double min{ minVec(channels) };
 				double max{ maxVec(channels) };
 				double contrast = max - min;
-				
+
 				//V
 				double val{ max };
 				double sat{ val != 0.0 ? contrast / val : 0.0 };
-				double hue{0.0};
+				double hue{ 0.0 };
 
 				if (contrast != 0) {
 					if (max == r) {
 						hue = 60 * (g - b) / contrast;
 					}
-					else if(max == g) {
+					else if (max == g) {
 						hue = 120 + 60 * (b - r) / contrast;
 					}
-					else{
+					else {
 						hue = 240 + 60 * (r - g) / contrast;
 					}
 				}
@@ -876,7 +877,7 @@ void convertBGRToHSVAndDisplay() {
 
 //2.7.5
 bool isInside(Mat img, int i, int j) {
-	return i >= 0 && i < img.rows && j >= 0 && j < img.cols;
+	return i >= 0 && i < img.rows&& j >= 0 && j < img.cols;
 }
 
 void testIsInside(int i, int j) {
@@ -891,6 +892,170 @@ void testIsInside(int i, int j) {
 		getchar();
 	}
 }
+
+
+//3.6.1 && 3.6.2 && 3.6.3 && 3.6.4 && 3.6.5 && 3.6.6
+std::vector<double> computeFDP(std::vector<int> hist, int M) {
+	std::vector<double> fdp;
+	for (int i = 0; i < hist.size(); i++) {
+		fdp.push_back(((double)hist.at(i)) / M);
+		printf("%d: %lf\n", i, fdp.at(i));
+	}
+	return fdp;
+}
+
+std::vector<int> computeThresholds(std::vector<double> fdp) {
+	const int WH{ 5 };
+	const double TH{ 0.0003 };
+	std::vector<int> peaks;
+	for (int i = 0 + WH; i < 255 - WH; i++) {
+		double avg{ 0.0 };
+		double max{ 0.0 };
+		for (int j = i - WH; j < i + WH; j++) {
+			avg += fdp.at(j);
+			if (max < fdp.at(j)) {
+				max = fdp.at(j);
+			}
+		}
+		avg /= 2 * WH + 1;
+		if (fdp.at(i) > avg + TH && fdp.at(i) == max) {
+			peaks.push_back(i);
+		}
+	}
+	peaks.insert(peaks.begin(), 0.0);
+	peaks.push_back(255);
+	return peaks;
+}
+
+bool isInside(int height, int width, int i, int j) {
+	return i >= 0 && j >= 0 && i < height&& j < width;
+}
+
+void computeHistogram(const int bins) {
+	char fname[MAX_PATH];
+	std::vector<int> hist(bins, 0);
+	while (openFileDlg(fname))
+	{
+		double t = (double)getTickCount(); // Get the current time [s]
+
+		Mat src = imread(fname, CV_LOAD_IMAGE_GRAYSCALE);
+		int height = src.rows;
+		int width = src.cols;
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				++hist.at(src.at<uchar>(i, j) * bins / 256);
+			}
+		}
+		std::vector<double> fdp = computeFDP(hist, height * width);
+		if (bins == 256) {
+			std::vector<int> peaks = computeThresholds(fdp);
+			std::vector<int> pixelMap(256, 0);
+			int index{ 0 };
+			for (int i = 0; i < 256; i++) {
+				if (index < peaks.size() - 1 && abs(i - peaks.at(index)) > abs(i - peaks.at(index + 1))) {
+					++index;
+				}
+				pixelMap.at(i) = peaks.at(index);
+			}
+			Mat reduced_image = Mat(height, width, CV_8UC1);
+			for (int i = 0; i < height; i++)
+			{
+				for (int j = 0; j < width; j++)
+				{
+					reduced_image.at<uchar>(i, j) = pixelMap.at(src.at<uchar>(i, j));
+				}
+			}
+			imshow("Reduced image", reduced_image);
+
+			Mat reduced_image_dithered = Mat(height, width, CV_8UC1);
+			for (int i = 0; i < height; i++)
+			{
+				for (int j = 0; j < width; j++)
+				{
+					reduced_image_dithered.at<uchar>(i, j) = pixelMap.at(src.at<uchar>(i, j));
+					int error{ src.at<uchar>(i, j) - reduced_image_dithered.at<uchar>(i, j) };
+					if (isInside(height, width, i, j + 1)) {
+						reduced_image_dithered.at<uchar>(i, j) += 7 * error / 16;
+					}
+					if (isInside(height, width, i + 1, j - 1)) {
+						reduced_image_dithered.at<uchar>(i, j) += 3 * error / 16;
+					}
+					if (isInside(height, width, i + 1, j)) {
+						reduced_image_dithered.at<uchar>(i, j) += 5 * error / 16;
+					}
+					if (isInside(height, width, i + 1, j + 1)) {
+						reduced_image_dithered.at<uchar>(i, j) += error / 16;
+					}
+				}
+			}
+			imshow("Reduced image dithered", reduced_image_dithered);
+		}
+		// Get the current time again and compute the time difference [s]
+		t = ((double)getTickCount() - t) / getTickFrequency();
+		// Print (in the console window) the processing time in [ms] 
+		printf("Time = %.3f [ms]\n", t * 1000);
+
+		imshow("input image", src);
+		showHistogram("histogram", &hist[0], bins, 200);
+		waitKey();
+	}
+}
+
+void reduceHSV() {
+	char fname[MAX_PATH];
+	std::vector<int> hist(256, 0);
+	while (openFileDlg(fname))
+	{
+		Mat src = imread(fname, CV_LOAD_IMAGE_COLOR);
+		int height = src.rows;
+		int width = src.cols;
+
+		Mat hsv = Mat(height, width, CV_8UC3);
+		cvtColor(src, hsv, CV_BGR2HSV);
+
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				++hist.at(hsv.at<Vec3b>(i, j)[0]);
+			}
+		}
+		std::vector<double> fdp = computeFDP(hist, height * width);
+
+		std::vector<int> peaks = computeThresholds(fdp);
+		std::vector<int> pixelMap(256, 0);
+		int index{ 0 };
+		for (int i = 0; i < 256; i++) {
+			if (index < peaks.size() - 1 && abs(i - peaks.at(index)) > abs(i - peaks.at(index + 1))) {
+				++index;
+			}
+			pixelMap.at(i) = peaks.at(index);
+		}
+		Mat reduced_image = Mat(height, width, CV_8UC3);
+		for (int i = 0; i < height; i++)
+		{
+			for (int j = 0; j < width; j++)
+			{
+				Vec3b pixel;
+				pixel[0] = pixelMap.at(hsv.at<Vec3b>(i, j)[0]);
+				pixel[1] = hsv.at<Vec3b>(i, j)[1];
+				pixel[2] = hsv.at<Vec3b>(i, j)[2];
+				reduced_image.at<Vec3b>(i, j) = pixel;
+			}
+		}
+		Mat output = Mat(height, width, CV_8UC3);
+		cvtColor(reduced_image, output, CV_HSV2BGR);
+		imshow("Reduced image", output);
+
+		imshow("input image", src);
+		showHistogram("histogram", &hist[0], 256, 200);
+		waitKey();
+	}
+}
+
+
 
 int main()
 {
@@ -918,6 +1083,9 @@ int main()
 		printf(" 16 - 2.7.3 (Grayscale to binary)\n");
 		printf(" 17 - 2.7.4 (Color to H, S, V channels)\n");
 		printf(" 18 - 2.7.5 (IsInside test)\n");
+		printf(" 19 - 3.6.1 && 3.6.2 && 3.6.3 && 3.6.4 (Histogram (bins <= 256) + FDP)\n");
+		printf(" 20 - 3.6.5 && 3.6.6 (Grayscale levels reducing)\n");
+		printf(" 21 - 3.6.7 (HSV H reducing)");
 		printf(" 0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
@@ -993,6 +1161,17 @@ int main()
 			scanf("%d", &j);
 			testIsInside(i, j);
 			break;
+		case 19:
+			printf("bins: ");
+			int bins;
+			scanf("%d", &bins);
+			computeHistogram(bins);
+			break;
+		case 20:
+			computeHistogram(256);
+			break;
+		case 21:
+			reduceHSV();
 		}
 	} while (op != 0);
 	return 0;
