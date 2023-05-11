@@ -563,7 +563,7 @@ float determinant(Mat a, float k)
 	int i, j, m, n, c;
 	if (k == 1)
 	{
-		return a.at<float>(0, 0);
+		return a.at<float>(0,0);
 	}
 	else
 	{
@@ -590,7 +590,7 @@ float determinant(Mat a, float k)
 					}
 				}
 			}
-			det = det + s * (a.at<float>(0, c) * determinant(b, k - 1));
+			det = det + s * (a.at<float>(0,c) * determinant(b, k - 1));
 			s = -1 * s;
 		}
 	}
@@ -620,7 +620,7 @@ Mat tp(Mat num, Mat fac, float r)
 // function for cofactor calculation
 Mat cofactor(Mat num, float f)
 {
-	Mat b(3, 3, CV_32FC1), fac(3, 3, CV_32FC1);
+	Mat b(3,3,CV_32FC1), fac(3, 3, CV_32FC1);
 	int p, q, m, n, i, j;
 	for (q = 0; q < f; q++)
 	{
@@ -645,7 +645,7 @@ Mat cofactor(Mat num, float f)
 					}
 				}
 			}
-			fac.at<float>(q, p) = pow(-1, q + p) * determinant(b, f - 1);
+			fac.at<float>(q,p) = pow(-1, q + p) * determinant(b, f - 1);
 		}
 	}
 	return tp(num, fac, f);
@@ -835,20 +835,20 @@ void convertBGRToHSVAndDisplay() {
 				double min{ minVec(channels) };
 				double max{ maxVec(channels) };
 				double contrast = max - min;
-
+				
 				//V
 				double val{ max };
 				double sat{ val != 0.0 ? contrast / val : 0.0 };
-				double hue{ 0.0 };
+				double hue{0.0};
 
 				if (contrast != 0) {
 					if (max == r) {
 						hue = 60 * (g - b) / contrast;
 					}
-					else if (max == g) {
+					else if(max == g) {
 						hue = 120 + 60 * (b - r) / contrast;
 					}
-					else {
+					else{
 						hue = 240 + 60 * (r - g) / contrast;
 					}
 				}
@@ -877,7 +877,7 @@ void convertBGRToHSVAndDisplay() {
 
 //2.7.5
 bool isInside(Mat img, int i, int j) {
-	return i >= 0 && i < img.rows&& j >= 0 && j < img.cols;
+	return i >= 0 && i < img.rows && j >= 0 && j < img.cols;
 }
 
 void testIsInside(int i, int j) {
@@ -954,7 +954,7 @@ void computeHistogram(const int bins) {
 			std::vector<int> pixelMap(256, 0);
 			int index{ 0 };
 			for (int i = 0; i < 256; i++) {
-				if (index < peaks.size() - 1 && abs(i - peaks.at(index)) > abs(i - peaks.at(index + 1))) {
+				if (index < peaks.size() - 1 && abs(i - peaks.at(index)) > abs(i - peaks.at(index +1))) {
 					++index;
 				}
 				pixelMap.at(i) = peaks.at(index);
@@ -1023,7 +1023,7 @@ void reduceHSV() {
 			}
 		}
 		std::vector<double> fdp = computeFDP(hist, height * width);
-
+			
 		std::vector<int> peaks = computeThresholds(fdp);
 		std::vector<int> pixelMap(256, 0);
 		int index{ 0 };
