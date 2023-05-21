@@ -2147,11 +2147,286 @@ void fillFromMorph(KernelType kernelType, Point p) {
 }
 
 
+
+// 8.8.1
+Mat openImage(int flags) {
+	char fname[MAX_PATH];
+	Mat image;
+
+	if (openFileDlg(fname)) {
+		image = imread(fname, flags);
+	}
+
+	return image;
+}
+
+double mean(const Mat& image) {
+	int srcWidth{ image.cols };
+	int srcHeight{ image.rows };
+	long long sum{ 0 };
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			sum += image.at<uchar>(i, j);
+		}
+	}
+
+	return ((double)sum) / (srcWidth * srcHeight);
+}
+
+double stdDev(const Mat& image, double mean) {
+	int srcWidth{ image.cols };
+	int srcHeight{ image.rows };
+	double sum{ 0 };
+	double val{ 0 };
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			val = (image.at<uchar>(i, j) - mean);
+			sum += (val * val);
+		}
+	}
+
+	return sqrt(sum / (srcWidth * srcHeight));
+}
+
+std::vector<int> histogram(const Mat& image) {
+	int srcWidth{ image.cols };
+	int srcHeight{ image.rows };
+	std::vector<int> hist(256);
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			hist[image.at<uchar>(i, j)]++;
+		}
+	}
+
+	return hist;
+}
+
+std::vector<int> cumulativeHistogram(std::vector<int> hist) {
+	std::vector<int> cumulative_hist(256);
+
+	for (int i = 0; i < 256; i++) {
+		for (int j = 0; j <= i; j++) {
+			cumulative_hist.at(i) += hist.at(j);
+		}
+	}
+
+	return cumulative_hist;
+}
+
+void globalAutomaticBinarization(double maxError) {
+	Mat image{ openImage(CV_LOAD_IMAGE_GRAYSCALE) };
+	std::vector<int> hist{ histogram(image) };
+	double ug1, ug2, t{ 127 }, tlast{ 0 };
+	long long n1, n2;
+	int srcWidth{ image.cols };
+	int srcHeight{ image.rows };
+
+	while (t - tlast > maxError) {
+		ug1 = 0;
+		ug2 = 0;
+		n1 = 0;
+		n2 = 0;
+
+		for (int i = 0; i < t; i++) {
+			ug1 += i * hist.at(i);
+			n1 += hist.at(i);
+		}
+		for (int i = t + 1; i < 256; i++) {
+			ug2 += i * hist.at(i);
+			n2 += hist.at(i);
+		}
+
+		ug1 /= n1;
+		ug2 /= n2;
+
+		tlast = t;
+		t = (ug1 + ug2) / 2;
+	}
+
+	Mat binarized = Mat::zeros(image.rows, image.cols, CV_8UC1);
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			if (image.at<uchar>(i, j) > t) {
+				binarized.at<uchar>(i, j) = 255;
+			}
+		}
+	}
+
+	std::cout << "Threshold: " << t << '\n';
+	imshow("Original", image);
+	imshow("Binarized", binarized);
+	waitKey();
+}
+
+//8.8.3
+int saturate(int val, int min, int max) {
+	if (val > max) {
+		val = max;
+	}
+	if (val < min) {
+		val = min;
+	}
+
+	return val;
+}
+
+int minG(std::vector<int> vect) {
+	for (int i = 0; i < 256; i++) {
+		if (vect.at(i) > 0) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+int maxG(std::vector<int> vect) {
+	for (int i = 255; i >= 0; i--) {
+		if (vect.at(i) > 0) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+Mat negative(const Mat& image) {
+	int srcWidth{ image.cols };
+	int srcHeight{ image.rows };
+	Mat copy;
+	image.copyTo(copy);
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			copy.at<uchar>(i, j) = 255 - image.at<uchar>(i, j);
+		}
+	}
+
+	return copy;
+}
+
+Mat brightness(const Mat& image, int offset) {
+	int srcWidth{ image.cols };
+	int srcHeight{ image.rows };
+	int newPixel;
+	Mat copy;
+	image.copyTo(copy);
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			copy.at<uchar>(i, j) = saturate(image.at<uchar>(i, j) + offset, 0, 255);
+		}
+	}
+
+	return copy;
+}
+
+Mat contrast(const Mat& image, int nmin, int nmax) {
+	int srcWidth{ image.cols };
+	int srcHeight{ image.rows };
+	int newPixel;
+	Mat copy;
+	image.copyTo(copy);
+	std::vector<int> hist{ histogram(image) };
+	int hmin{ minG(hist) }, hmax{ maxG(hist) };
+	double ratio = ((double)nmax - nmin) / (hmax - hmin);
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			copy.at<uchar>(i, j) = nmin + ((int)(image.at<uchar>(i, j) - hmin) * ratio);
+		}
+	}
+
+	return copy;
+}
+
+Mat gamma(const Mat& image, double gamma) {
+	int srcWidth{ image.cols };
+	int srcHeight{ image.rows };
+	Mat copy;
+	image.copyTo(copy);
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			copy.at<uchar>(i, j) = saturate(255 * pow(image.at<uchar>(i, j) / 255.0, gamma), 0, 255);
+		}
+	}
+
+	return copy;
+}
+
+void analyticalTranformations(int brightnessOffset, int minContrast, int maxContrast, double gammaVal) {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+	showHistogram("Original histogram", &histogram(image).at(0), 256, 200);
+	
+	Mat negativeMat = negative(image);
+	imshow("Negative", negativeMat);
+	showHistogram("Negative histogram", &histogram(negativeMat).at(0), 256, 200);
+
+	Mat brightnessMat = brightness(image, brightnessOffset);
+	imshow("Brightness", brightnessMat);
+	showHistogram("Brightness histogram", &histogram(brightnessMat).at(0), 256, 200);
+
+	Mat contrastMat = contrast(image, minContrast, maxContrast);
+	imshow("Contrast", contrastMat);
+	showHistogram("Contrast histogram", &histogram(contrastMat).at(0), 256, 200);
+
+	Mat gammaMat = gamma(image, gammaVal);
+	imshow("Gamma", gammaMat);
+	showHistogram("Gamma histogram", &histogram(gammaMat).at(0), 256, 200);
+
+	waitKey();
+}
+
+//8.8.4
+Mat equalize(const Mat& image) {
+	int srcWidth{ image.cols };
+	int srcHeight{ image.rows };
+	long long nPixels = srcHeight * srcWidth;
+	Mat copy;
+	image.copyTo(copy);
+	std::vector<int> cumulativeHistModified = cumulativeHistogram(histogram(image));
+	for (int i = 0; i < 256; i++) {
+		cumulativeHistModified.at(i) = 255 * cumulativeHistModified.at(i) / ((double)nPixels);
+	}
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			copy.at<uchar>(i, j) = cumulativeHistModified.at(image.at<uchar>(i, j));
+		}
+	}
+
+	return copy;
+}
+
+void histogramEqualization() {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+	showHistogram("Original histogram", &histogram(image).at(0), 256, 200);
+
+	Mat equalized = equalize(image);
+	imshow("Equalized", equalized);
+	showHistogram("Equalized histogram", &histogram(equalized).at(0), 256, 200);
+
+	waitKey();
+}
+
+
 int main()
 {
 	int op;
 	int nOpOC{ 1 };
 	Point p;
+	double meanVal;
+	std::vector<int> histogramVal;
+	Mat image;
+	double thresholdError;
+	int brightnessOffset, minContrast, maxContrast;
+	double gammaVal;
 	do
 	{
 		system("cls");
@@ -2188,6 +2463,10 @@ int main()
 		printf(" 29 - 7.4.2 (Repeated morph operations)\n");
 		printf(" 30 - 7.4.3 (Contour using morph operations)\n");
 		printf(" 31 - 7.4.4 (Fill using morph operations)\n");
+		printf(" 32 - 8.8.1 (Mean, Std. dev., histogram and cumulative histogram for grayscale)\n");
+		printf(" 33 - 8.8.2 (Global Automatic Binarization)\n");
+		printf(" 34 - 8.8.3 (Analytical transformations)\n");
+		printf(" 35 - 8.8.4 (Histogram equalization)\n");
 		printf(" 0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
@@ -2473,7 +2752,35 @@ int main()
 				fillFromMorph(static_cast<KernelType>(kernelType4), p);
 			}
 			break;
-		
+		case 32:
+			image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+			meanVal = mean(image);
+			std::cout << "Mean: " << mean(image) << '\n';
+			std::cout << "Standard deviation: " << stdDev(image, meanVal) << '\n';
+			histogramVal = histogram(image);
+			showHistogram("Histogram", &histogramVal[0], 256, 200);
+			showHistogram("Cumulative histogram", &cumulativeHistogram(histogramVal)[0], 256, 200);
+			waitKey();
+			break;
+		case 33:
+			std::cout << "Max threshold error: ";
+			std::cin >> thresholdError;
+			globalAutomaticBinarization(thresholdError);
+			break;
+		case 34:
+			std::cout << "Brightness offset: ";
+			std::cin >> brightnessOffset;
+			std::cout << "Min contrast: ";
+			std::cin >> minContrast;
+			std::cout << "Max contrast: ";
+			std::cin >> maxContrast;
+			std::cout << "Gamma: ";
+			std::cin >> gammaVal;
+			analyticalTranformations(brightnessOffset, minContrast, maxContrast, gammaVal);
+			break;
+		case 35:
+			histogramEqualization();
+			break;
 		}
 	} while (op != 0);
 	return 0;
