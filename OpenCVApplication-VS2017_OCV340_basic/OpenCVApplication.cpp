@@ -6,6 +6,7 @@
 #include <vector>
 #include <sstream>
 #include <random>
+#include <fstream>
 
 
 void testOpenImage()
@@ -1593,6 +1594,257 @@ void labelImage2Pass(int tip_adiacent) {
 
 
 
+// 6.3.1 && 6.3.2
+Mat traceContour(Mat src, std::pair<int, int> startingPosition, Adiacent adiacent, Vec3b background_pixel = Vec3b(255, 255, 255), Vec3b contourColor = Vec3b(255, 0, 255)) {
+	int width{ src.cols };
+	int height{ src.rows };
+	Mat traced;
+	src.copyTo(traced);
+	int dir{-1000}, startHeading{-1000}, newHeading{-1000};
+	std::pair<int, int> secondStartingPosition{-2, -2}, lastCurrentPosition{-1, -1}, currentPosition{ -1, -1 };
+	
+	lastCurrentPosition = currentPosition;
+	currentPosition = startingPosition;
+	if (adiacent.n == 4) {
+		dir = 0;
+		startHeading = (dir + 3) % 4;
+	}
+	else if (adiacent.n = 8) {
+		dir = 7;
+		if (dir % 2) {
+			startHeading = (dir + 6) % 8;
+		}
+		else {
+			startHeading = (dir + 7) % 8;
+		}
+	}
+
+	for (int i = 0; i < adiacent.n; i++) {
+		newHeading = (startHeading + i) % adiacent.n;
+		int newRow = currentPosition.first + adiacent.di[newHeading];
+		int newCol = currentPosition.second + adiacent.dj[newHeading];
+		if (traced.at<Vec3b>(newRow, newCol) != background_pixel) {
+			secondStartingPosition.first = newRow;
+			secondStartingPosition.second = newCol;
+			currentPosition = secondStartingPosition;
+			traced.at<Vec3b>(newRow, newCol) = contourColor;
+			dir = newHeading;
+			break;
+		}
+	}
+
+	while (currentPosition != secondStartingPosition || lastCurrentPosition != startingPosition) {
+		if (adiacent.n == 4) {
+			startHeading = (dir + 3) % 4;
+		}
+		else if (adiacent.n = 8) {
+			if (dir % 2) {
+				startHeading = (dir + 6) % 8;
+			}
+			else {
+				startHeading = (dir + 7) % 8;
+			}
+		}
+
+		for (int i = 0; i < adiacent.n; i++) {
+			newHeading = (startHeading + i) % adiacent.n;
+			int newRow = currentPosition.first + adiacent.di[newHeading];
+			int newCol = currentPosition.second + adiacent.dj[newHeading];
+			if (traced.at<Vec3b>(newRow, newCol) != background_pixel) {
+				secondStartingPosition.first = newRow;
+				secondStartingPosition.second = newCol;
+				lastCurrentPosition = currentPosition;
+				currentPosition = secondStartingPosition;
+				traced.at<Vec3b>(newRow, newCol) = contourColor;
+				dir = newHeading;
+				break;
+			}
+		}
+	}
+
+	return traced;
+}
+
+Mat traceContour(Mat src, std::pair<int, int> startingPosition, Adiacent adiacent, std::vector<int> &chainCode, std::vector<int>& derivatedChainCode, Vec3b background_pixel = Vec3b(255, 255, 255), Vec3b contourColor = Vec3b(255, 0, 255)) {
+	int width{ src.cols };
+	int height{ src.rows };
+	Mat traced;
+	src.copyTo(traced);
+	int dir{ -1000 }, startHeading{ -1000 }, newHeading{ -1000 }, chainCodes;
+	std::pair<int, int> secondStartingPosition{ -2, -2 }, lastCurrentPosition{ -1, -1 }, currentPosition{ -1, -1 };
+
+	lastCurrentPosition = currentPosition;
+	currentPosition = startingPosition;
+	if (adiacent.n == 4) {
+		dir = 0;
+		startHeading = (dir + 3) % 4;
+	}
+	else if (adiacent.n = 8) {
+		dir = 7;
+		if (dir % 2) {
+			startHeading = (dir + 6) % 8;
+		}
+		else {
+			startHeading = (dir + 7) % 8;
+		}
+	}
+
+	for (int i = 0; i < adiacent.n; i++) {
+		newHeading = (startHeading + i) % adiacent.n;
+		int newRow = currentPosition.first + adiacent.di[newHeading];
+		int newCol = currentPosition.second + adiacent.dj[newHeading];
+		if (traced.at<Vec3b>(newRow, newCol) != background_pixel) {
+			secondStartingPosition.first = newRow;
+			secondStartingPosition.second = newCol;
+			currentPosition = secondStartingPosition;
+			traced.at<Vec3b>(newRow, newCol) = contourColor;
+			dir = newHeading;
+			break;
+		}
+	}
+
+	chainCode.push_back(dir);
+
+	while (currentPosition != secondStartingPosition || lastCurrentPosition != startingPosition) {
+		if (adiacent.n == 4) {
+			startHeading = (dir + 3) % 4;
+		}
+		else if (adiacent.n = 8) {
+			if (dir % 2) {
+				startHeading = (dir + 6) % 8;
+			}
+			else {
+				startHeading = (dir + 7) % 8;
+			}
+		}
+
+		for (int i = 0; i < adiacent.n; i++) {
+			newHeading = (startHeading + i) % adiacent.n;
+			int newRow = currentPosition.first + adiacent.di[newHeading];
+			int newCol = currentPosition.second + adiacent.dj[newHeading];
+			if (traced.at<Vec3b>(newRow, newCol) != background_pixel) {
+				secondStartingPosition.first = newRow;
+				secondStartingPosition.second = newCol;
+				lastCurrentPosition = currentPosition;
+				currentPosition = secondStartingPosition;
+				traced.at<Vec3b>(newRow, newCol) = contourColor;
+				dir = newHeading;
+				break;
+			}
+		}
+
+		chainCode.push_back(dir);
+		chainCodes = chainCode.size();
+		if (adiacent.n == 4) {
+			derivatedChainCode.push_back((4 - chainCode.at(chainCodes - 2) + chainCode.at(chainCodes - 1)) % 4);
+		}
+		else if (adiacent.n = 8) {
+			derivatedChainCode.push_back((8 - chainCode.at(chainCodes - 2) + chainCode.at(chainCodes - 1)) % 8);
+		}
+	}
+
+	chainCode.pop_back();
+
+	return traced;
+}
+
+void contourTracing(int tipAdiacent) {
+	const Vec3b background_pixel(255, 255, 255);
+	char fname[MAX_PATH];
+	int di1[]{ 0,-1, 0, 1 };
+	int dj1[]{ 1, 0,-1, 0 };
+	int di2[]{ 0,-1,-1,-1, 0, 1, 1, 1 };
+	int dj2[]{ 1, 1, 0,-1,-1,-1, 0, 1 };
+
+	if (openFileDlg(fname))
+	{
+		Mat src{ imread(fname, CV_LOAD_IMAGE_COLOR) }, traced;
+		int width{ src.cols };
+		int height{ src.rows };
+
+		Adiacent adiacent;
+		switch (tipAdiacent) {
+		case N4:
+			adiacent.n = 4;
+			adiacent.di = di1;
+			adiacent.dj = dj1;
+			break;
+		case N8:
+			adiacent.n = 8;
+			adiacent.di = di2;
+			adiacent.dj = dj2;
+			break;
+		}
+
+		int isTraced = false;
+		std::vector<int> chainCode, derivedChainCode;
+		for (int i = 0; i < height && !isTraced; i++) {
+			for (int j = 0; j < width && !isTraced; j++) {
+				if (src.at<Vec3b>(i, j) != background_pixel) {
+					traced = traceContour(src, std::pair<int, int>(i, j), adiacent, chainCode, derivedChainCode, background_pixel);
+					isTraced = true;
+				}
+			}
+		}
+
+		std::cout << "Chain code (" << chainCode.size() << " codes): ";
+		for (int code : chainCode) {
+			std::cout << code << " ";
+		}
+		std::cout << "\nDerived chain code (" << derivedChainCode.size() << " codes): ";
+		for (int code : derivedChainCode) {
+			std::cout << code << " ";
+		}
+
+		imshow("Original", src);
+		imshow("Traced", traced);
+		waitKey(0);
+	}
+}
+
+//6.3.3
+void chainCodeReconstruct(Vec3b objectPixel = Vec3b(255, 0, 255)) {
+	char fname[MAX_PATH], fname2[MAX_PATH];
+	std::cout << "Open the chain code file...\n";
+	if (openFileDlg(fname))
+	{
+		std::cout << "Open the background file...\n";
+		if (openFileDlg(fname2)) {
+			Mat src{ imread(fname2, CV_LOAD_IMAGE_COLOR) };
+
+			std::ifstream in(fname);
+			Point current;
+			int chainCodes, dir;
+
+			in >> current.y >> current.x >> chainCodes;
+
+			src.at<Vec3b>(current.y, current.x) = objectPixel;
+			for (int i = 0; i < chainCodes; i++) {
+				in >> dir;
+				if (dir >= 5 && dir <= 7) {
+					current.y++;
+				}
+				else if (dir >= 1 && dir <= 3) {
+					current.y--;
+				}
+
+				if (dir == 7 || dir == 0 || dir == 1) {
+					current.x++;
+				}
+				else if (dir >= 3 && dir <= 5) {
+					current.x--;
+				}
+				src.at<Vec3b>(current.y, current.x) = objectPixel;
+			}
+
+			imshow("Reconstructed", src);
+			waitKey(0);
+		}
+	}
+}
+
+
+
 // 7.4.1 && 7.4.2
 enum MorphType {
 	DILLATE,
@@ -1894,10 +2146,12 @@ void fillFromMorph(KernelType kernelType, Point p) {
 	fillFromMorph(Kernel(kernelType), p);
 }
 
+
 int main()
 {
 	int op;
 	int nOpOC{ 1 };
+	Point p;
 	do
 	{
 		system("cls");
@@ -1926,12 +2180,14 @@ int main()
 		printf(" 21 - 3.6.7 (HSV H reducing)\n");
 		printf(" 22 - 4.4.1 (Geometry)\n");
 		printf(" 23 - 4.4.2 (Filtering based on area and elongation angle)\n");
-		printf(" 24 - 5.5.1 & 5.5.2 (Labeling using BFS)\n");
+		printf(" 24 - 5.5.1 && 5.5.2 (Labeling using BFS)\n");
 		printf(" 25 - 5.5.3 (Labeling using 2 passes and Disjoint sets)\n");
-		printf(" 26 - 7.4.1 (Morph operations)\n");
-		printf(" 27 - 7.4.2 (Repeated morph operations)\n");
-		printf(" 28 - 7.4.3 (Contour using morph operations)\n");
-		printf(" 29 - 7.4.4 (Fill using morph operations)\n");
+		printf(" 26 - 6.3.1 && 6.3.2 (Contour tracing with chain code and derived chain code)\n");
+		printf(" 27 - 6.3.3 (Reconstruction by reading chain code)\n");
+		printf(" 28 - 7.4.1 (Morph operations)\n");
+		printf(" 29 - 7.4.2 (Repeated morph operations)\n");
+		printf(" 30 - 7.4.3 (Contour using morph operations)\n");
+		printf(" 31 - 7.4.4 (Fill using morph operations)\n");
 		printf(" 0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
@@ -2081,6 +2337,14 @@ int main()
 			}
 			break;
 		case 26:
+			int tipAdiacent;
+			std::cout << "Choose adjacency type (0 - N4, 1 - N8): ";
+			std::cin >> tipAdiacent;
+			contourTracing(tipAdiacent);
+			break;
+		case 27:
+			chainCodeReconstruct();
+		case 28:
 			int morphType;
 			std::cout << "Choose morph type (0 - DILLATE, 1 - ERODE, 2 - OPEN, 3 - CLOSE): ";
 			std::cin >> morphType;
@@ -2116,7 +2380,7 @@ int main()
 				executeMorphOp(static_cast<MorphType>(morphType), static_cast<KernelType>(kernelType), 1, nOpOC);
 			}
 			break;
-		case 27:
+		case 29:
 			int morphType2;
 			std::cout << "Choose morph type (0 - DILLATE, 1 - ERODE, 2 - OPEN, 3 - CLOSE): ";
 			std::cin >> morphType2;
@@ -2153,7 +2417,7 @@ int main()
 				executeMorphOp(static_cast<MorphType>(morphType2), static_cast<KernelType>(kernelType2), nOp, nOpOC);
 			}
 			break;
-		case 28:
+		case 30:
 			int kernelType3;
 			std::cout << "Choose kernel type (0 - 3X3 CROSS, 1 - 3X3 BOX, 2 - CUSTOM): ";
 			std::cin >> kernelType3;
@@ -2180,11 +2444,10 @@ int main()
 				contourFromMorph(static_cast<KernelType>(kernelType3));
 			}
 			break;
-		case 29:
+		case 31:
 			int kernelType4;
 			std::cout << "Choose kernel type (0 - 3X3 CROSS, 1 - 3X3 BOX, 2 - CUSTOM): ";
 			std::cin >> kernelType4;
-			Point p;
 			std::cout << "Choose starting point (i, j): ";
 			std::cin >> p.y >> p.x;
 			if (kernelType4 == 2) {
@@ -2210,6 +2473,7 @@ int main()
 				fillFromMorph(static_cast<KernelType>(kernelType4), p);
 			}
 			break;
+		
 		}
 	} while (op != 0);
 	return 0;
