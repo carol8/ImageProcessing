@@ -6,6 +6,7 @@
 #include <fstream>
 
 #define M_E 2.71828182845904523536
+#define M_PI 3.14159265358979323846
 
 void testOpenImage()
 {
@@ -2703,6 +2704,186 @@ void testFrequencyFilter(double R, double A) {
 	waitKey();
 }
 
+
+
+//10.5.1
+Mat medianFilter(const Mat& image, int w) {
+	std::vector<uchar> auxVector;
+	int imgWidth{ image.cols };
+	int imgHeight{ image.rows };
+	int median = (w * w) / 2;
+	Mat copy;
+	image.copyTo(copy);
+
+	double t = (double)getTickCount();
+
+	for (int i = w / 2; i < imgHeight - w / 2; i++) {
+		for (int j = w / 2; j < imgWidth - w / 2; j++) {
+			auxVector.clear();
+			for (int ii = -w / 2; ii <= w / 2; ii++) {
+				for (int jj = -w / 2; jj <= w / 2; jj++) {
+					auxVector.push_back(image.at<uchar>(i + ii, j + jj));
+				}
+			}
+			std::sort(auxVector.begin(), auxVector.end());
+			copy.at<uchar>(i, j) = auxVector.at(median);
+		}
+	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	printf("Time (for median filter) = %.3f [ms]\n", t * 1000);
+
+	return copy;
+}
+
+void testMedianFilter(int w) {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+
+	imshow("Original", image);
+	imshow("Unseasoned", medianFilter(image, w));
+
+	waitKey();
+}
+
+//10.5.2
+Kernel gaussianKernelGenerator(int w) {
+	Point origin(w / 2, w / 2);
+	Mat mat = Mat::zeros(w, w, CV_32FC1);
+	double sigma = w / 6.0;
+	for (int i = -w / 2; i <= w / 2; i++) {
+		for (int j = -w / 2; j <= w / 2; j++) {
+			mat.at<float>(i + w / 2, j + w / 2) = pow(M_E, -(i * i + j * j) / (2 * sigma * sigma)) / (2 * M_PI * sigma);
+		}
+	}
+	return Kernel(mat, origin);
+}
+
+Mat convSquareKernel(const Mat& image, Kernel kernel) {
+	int imageWidth{ image.cols };
+	int imageHeight{ image.rows };
+	int kernelSize{ kernel.getKernel().rows };
+	double sum{ 0.0 }, invKernelCoefficient;
+	Mat copy;
+	image.copyTo(copy);
+
+	for (int i = 0; i < kernelSize; i++) {
+		for (int j = 0; j < kernelSize; j++) {
+			sum += kernel.getKernel().at<float>(i, j);
+		}
+	}
+	invKernelCoefficient = sum;
+
+	double t = (double)getTickCount();
+
+	for (int i = kernelSize / 2; i < imageHeight - kernelSize / 2; i++) {
+		for (int j = kernelSize / 2; j < imageWidth - kernelSize / 2; j++) {
+			sum = 0.0;
+			for (int ii = -kernelSize / 2; ii <= kernelSize / 2; ii++) {
+				for (int jj = -kernelSize / 2; jj <= kernelSize / 2; jj++) {
+					sum += image.at<uchar>(i + ii, j + jj) * kernel.getKernel().at<float>(ii + kernelSize / 2, jj + kernelSize / 2);
+				}
+			}
+			copy.at<uchar>(i, j) = static_cast<uchar>(sum / invKernelCoefficient);
+		}
+	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	printf("Time (for gaussian bidimensional kernel) = %.3f [ms]\n", t * 1000);
+
+	return copy;
+}
+
+void testGaussianBidimensionalKernelFilter(int w) {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+
+	imshow("Original", image);
+	imshow("Filtered", convSquareKernel(image, gaussianKernelGenerator(w)));
+
+	waitKey();
+}
+
+//10.5.3
+std::vector<double> gaussianXGenerator(int w) {
+	std::vector<double> gaussianX;
+	double sigma = w / 6.0;
+
+	for (int i = -w / 2; i <= w / 2; i++) {
+		gaussianX.push_back(pow(M_E, -(i * i) / (2 * sigma * sigma)) / (sqrt(2 * M_PI) * sigma));
+	}
+
+	return gaussianX;
+}
+
+std::vector<double> gaussianYGenerator(int w) {
+	std::vector<double> gaussianY;
+	double sigma = w / 6.0;
+
+	for (int j = -w / 2; j <= w / 2; j++) {
+		gaussianY.push_back(pow(M_E, -(j * j) / (2 * sigma * sigma)) / (sqrt(2 * M_PI) * sigma));
+	}
+
+	return gaussianY;
+}
+
+Mat convGaussianKernels(const Mat& image, std::vector<double> gaussianX, std::vector<double> gaussianY) {
+	int imageWidth{ image.cols };
+	int imageHeight{ image.rows };
+	int gaussianSize{ static_cast<int>(gaussianX.size()) };
+	double sum, invKernelCoefficientX, invKernelCoefficientY;
+	Mat copy, copy2;
+	image.copyTo(copy);
+
+	sum = 0.0;
+	for (int i = 0; i < gaussianSize; i++) {
+		sum += gaussianX.at(i);
+	}
+	invKernelCoefficientX = sum;
+
+	sum = 0.0;
+	for (int i = 0; i < gaussianSize; i++) {
+		sum += gaussianY.at(i);
+	}
+	invKernelCoefficientY = sum;
+
+	double t = (double)getTickCount();
+
+	for (int i = 0; i < imageHeight; i++) {
+		for (int j = gaussianSize / 2; j < imageWidth - gaussianSize / 2; j++) {
+			sum = 0.0;
+			for (int jj = -gaussianSize / 2; jj <= gaussianSize / 2; jj++) {
+				sum += image.at<uchar>(i, j + jj) * gaussianX.at(jj + gaussianSize / 2);
+			}
+			copy.at<uchar>(i, j) = static_cast<uchar>(sum / invKernelCoefficientX);
+		}
+	}
+
+	copy.copyTo(copy2);
+	for (int i = gaussianSize / 2; i < imageHeight - gaussianSize / 2; i++) {
+		for (int j = 0; j < imageWidth; j++) {
+			sum = 0.0;
+			for (int ii = -gaussianSize / 2; ii <= gaussianSize / 2; ii++) {
+				sum += copy.at<uchar>(i + ii, j) * gaussianY.at(ii + gaussianSize / 2);
+			}
+			copy2.at<uchar>(i, j) = static_cast<uchar>(sum / invKernelCoefficientY);
+		}
+	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	printf("Time (for gaussian unidimensional kernels) = %.3f [ms]\n", t * 1000);
+
+	return copy2;
+}
+
+void testGaussianUnidimensionalKernelFilters(int w) {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+
+	imshow("Original", image);
+	imshow("Filtered with bidimensional kernel", convSquareKernel(image, gaussianKernelGenerator(w)));
+	imshow("Filtered with unidimensional kernels", convGaussianKernels(image, gaussianXGenerator(w), gaussianYGenerator(w)));
+
+	waitKey();
+}
+
 int main()
 {
 	int op;
@@ -2715,6 +2896,7 @@ int main()
 	int brightnessOffset, minContrast, maxContrast;
 	double gammaVal;
 	double R, A;
+	int w;
 	do
 	{
 		system("cls");
@@ -2759,6 +2941,9 @@ int main()
 		printf(" 37 - 9.5.3 (Verify if the image filtered with a generic filter is the same as the original)\n");
 		printf(" 38 - 9.5.4 (Log of magnitude)\n");
 		printf(" 39 - 9.5.5 (Frequency filters)\n");
+		printf(" 40 - 10.5.1 (Median filter)\n");
+		printf(" 41 - 10.5.2 (Gaussian bidimensional kernel filter)\n");
+		printf(" 42 - 10.5.3 (Gaussian unidimensional kernels filter)\n");
 		printf(" 0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
@@ -3088,6 +3273,21 @@ int main()
 			std::cout << "A: ";
 			std::cin >> A;
 			testFrequencyFilter(R, A);
+			break;
+		case 40:
+			std::cout << "W: ";
+			std::cin >> w;
+			testMedianFilter(w);
+			break;
+		case 41:
+			std::cout << "W: ";
+			std::cin >> w;
+			testGaussianBidimensionalKernelFilter(w);
+			break;
+		case 42:
+			std::cout << "W: ";
+			std::cin >> w;
+			testGaussianUnidimensionalKernelFilters(w);
 			break;
 		}
 	} while (op != 0);
