@@ -1,5 +1,10 @@
 ﻿  OpenCVApplication.cpp
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(649,41): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(647,41): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(655,30): warning C4305: '=': truncation from 'double' to '_Tp'
           with
           [
               _Tp=float
@@ -14,50 +19,60 @@ D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_T
           [
               _Tp=float
           ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(660,31): warning C4305: '=': truncation from 'double' to '_Tp'
+          with
+          [
+              _Tp=float
+          ]
 D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(661,30): warning C4305: '=': truncation from 'double' to '_Tp'
           with
           [
               _Tp=float
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(662,31): warning C4305: '=': truncation from 'double' to '_Tp'
-          with
-          [
-              _Tp=float
-          ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(663,30): warning C4305: '=': truncation from 'double' to '_Tp'
-          with
-          [
-              _Tp=float
-          ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(793,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(804,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(926,30): warning C4244: 'argument': conversion from 'double' to '_Ty', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(791,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(802,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(924,30): warning C4244: 'argument': conversion from 'double' to '_Ty', possible loss of data
           with
           [
               _Ty=int
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(1531,61): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(1737,32): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2237,14): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2314,6): warning C4101: 'newPixel': unreferenced local variable
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2339,32): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(1529,61): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(1735,32): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2236,14): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2313,6): warning C4101: 'newPixel': unreferenced local variable
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2338,32): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=uchar
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2330,6): warning C4101: 'newPixel': unreferenced local variable
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2354,40): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2394,69): warning C4244: '=': conversion from 'double' to '_Ty', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2329,6): warning C4101: 'newPixel': unreferenced local variable
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2353,40): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2393,69): warning C4244: '=': conversion from 'double' to '_Ty', possible loss of data
           with
           [
               _Ty=int
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2507,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2507,10): message : consider using '%hhd' in the format string
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2513,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2513,10): message : consider using '%hhd' in the format string
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2531,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2531,10): message : consider using '%hhd' in the format string
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2471,64): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=uchar
+          ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2670,46): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2682,46): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2799,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2799,10): message : consider using '%hhd' in the format string
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2805,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2805,10): message : consider using '%hhd' in the format string
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2823,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2823,10): message : consider using '%hhd' in the format string
   OpenCVApplication.vcxproj -> D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\x64\Debug\OpenCVApplication.exe
   OpenCV\dll\Debug\opencv_ffmpeg340_64.dll
   OpenCV\dll\Debug\opencv_world340d.dll

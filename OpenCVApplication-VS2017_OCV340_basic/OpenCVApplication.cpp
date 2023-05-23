@@ -1,13 +1,11 @@
-// OpenCVApplication.cpp : Defines the entry point for the console application.
-//
-
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "common.h"
 #include <vector>
 #include <sstream>
 #include <random>
 #include <fstream>
 
+#define M_E 2.71828182845904523536
 
 void testOpenImage()
 {
@@ -119,7 +117,7 @@ void testParcurgereSimplaDiblookStyle()
 
 		double t = (double)getTickCount(); // Get the current time [s]
 
-		// the fastest approach using the �diblook style�
+		// the fastest approach using the “diblook style”
 		uchar* lpSrc = src.data;
 		uchar* lpDst = dst.data;
 		int w = (int)src.step; // no dword alignment is done !!!
@@ -1861,7 +1859,7 @@ enum KernelType {
 class Kernel {
 private:
 	Mat m_kernel;
-	Point& m_origin;
+	Point m_origin;
 public:
 	Kernel(Mat kernel, Point origin) :
 		m_kernel{ kernel }, m_origin{ origin }
@@ -1885,6 +1883,7 @@ public:
 			m_kernel.at<uchar>(2, 1) = 0;
 			m_kernel.at<uchar>(1, 0) = 0;
 			m_kernel.at<uchar>(1, 2) = 0;
+			break;
 		}
 	}
 
@@ -1892,11 +1891,11 @@ public:
 	{
 	}
 
-	Mat& getKernel() {
+	const Mat& getKernel() const {
 		return m_kernel;
 	}
 
-	Point& getOrigin() {
+	const Point& getOrigin() const {
 		return m_origin;
 	}
 };
@@ -2416,6 +2415,294 @@ void histogramEqualization() {
 }
 
 
+
+//9.5.1
+enum FilterType {
+	LOW_PASS,
+	HIGH_PASS
+};
+
+Mat filter(const Mat& image, const Kernel& kernel, const FilterType filterType) {
+	int srcWidth{ image.cols };
+	int srcHeight{ image.rows };
+	int kernelWidth{ kernel.getKernel().cols };
+	int kernelHeight{ kernel.getKernel().rows };
+	Mat copy;
+	image.copyTo(copy);
+	int startX{ kernel.getOrigin().x };
+	int endX{ srcWidth - (kernelWidth - startX - 1) };
+	int startY{ kernel.getOrigin().y };
+	int endY{ srcHeight - (kernelHeight - startY - 1) };
+	int invKernelCoefficient{ 1 };
+	int kernelOffset{ 0 };
+	if (filterType == FilterType::LOW_PASS) {
+		int sum{ 0 };
+		for (int i = 0; i < kernelHeight; i++) {
+			for (int j = 0; j < kernelHeight; j++) {
+				sum += kernel.getKernel().at<int>(i, j);
+			}
+		}
+		invKernelCoefficient = sum;
+	}
+	else if (filterType == FilterType::HIGH_PASS) {
+		int sumP{ 0 }, sumM{ 0 };
+		for (int i = 0; i < kernelHeight; i++) {
+			for (int j = 0; j < kernelWidth; j++) {
+				if (kernel.getKernel().at<int>(i, j) > 0) {
+					sumP += kernel.getKernel().at<int>(i, j);
+				}
+				else {
+					sumM -= kernel.getKernel().at<int>(i, j);
+				}
+			}
+		}
+		invKernelCoefficient = 2 * max(sumP, sumM);
+		kernelOffset = 127;
+	}
+
+	for (int i = startY; i < endY; i++) {
+		for (int j = startX; j < endX; j++) {
+			long long sum = 0;
+			for (int iKernel = 0; iKernel < kernelHeight; iKernel++) {
+				for (int jKernel = 0; jKernel < kernelWidth; jKernel++) {
+					sum += ((long long)kernel.getKernel().at<int>(iKernel, jKernel)) * image.at<uchar>(i - kernel.getOrigin().y + iKernel, j - kernel.getOrigin().x + jKernel);
+				}
+			}
+			copy.at<uchar>(i, j) = ((double)sum) / invKernelCoefficient + kernelOffset;
+		}
+	}
+
+	return copy;
+}
+
+//9.5.2
+void testSpatialFilter() {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+
+	int k5[3][3]{1,1,1,1,1,1,1,1,1};
+	Mat mat5(3, 3, CV_32SC1, k5);
+	Mat imageKernel5 = filter(image, Kernel(mat5, Point(1, 1)), LOW_PASS);
+	imshow("Kernel 5", imageKernel5);
+
+	int k6[3][3]{ 1,2,1,2,4,2,1,2,1 };
+	Mat mat6(3, 3, CV_32SC1, k6);
+	Mat imageKernel6 = filter(image, Kernel(mat6, Point(1, 1)), LOW_PASS);
+	imshow("Kernel 6", imageKernel6);
+
+	int k7[3][3]{ 0,-1,0,-1,4,-1,0,-1,0 };
+	Mat mat7(3, 3, CV_32SC1, k7);
+	Mat imageKernel7 = filter(image, Kernel(mat7, Point(1, 1)), HIGH_PASS);
+	imshow("Kernel 7", imageKernel7);
+
+	int k8[3][3]{ -1,-1,-1,-1,8,-1,-1,-1,-1 };
+	Mat mat8(3, 3, CV_32SC1, k8);
+	Mat imageKernel8 = filter(image, Kernel(mat8, Point(1, 1)), HIGH_PASS);
+	imshow("Kernel 8", imageKernel8);
+
+	int k9[3][3]{ 0,-1,0,-1,5,-1,0,-1,0 };
+	Mat mat9(3, 3, CV_32SC1, k9);
+	Mat imageKernel9 = filter(image, Kernel(mat9, Point(1, 1)), HIGH_PASS);
+	imshow("Kernel 9", imageKernel9);
+
+	int k10[3][3]{ -1,-1,-1,-1,9,-1,-1,-1,-1 };
+	Mat mat10(3, 3, CV_32SC1, k10);
+	Mat imageKernel10 = filter(image, Kernel(mat10, Point(1, 1)), HIGH_PASS);
+	imshow("Kernel 10", imageKernel10);
+
+	waitKey();
+}
+
+//9.5.3
+void centeringTransform(Mat img) {
+	// imaginea trebuie să aibă elemente de tip float
+	for (int i = 0; i < img.rows; i++) {
+		for (int j = 0; j < img.cols; j++) {
+			img.at<float>(i, j) = ((i + j) & 1) ? -img.at<float>(i, j) : img.at<float>(i, j);
+		}
+	}
+}
+
+Mat genericFrequencyDomainFilter(const Mat& src) {
+	Mat srcf;
+	src.convertTo(srcf, CV_32FC1);
+
+	centeringTransform(srcf);
+
+	Mat fourier;
+	dft(srcf, fourier, DFT_COMPLEX_OUTPUT);
+
+	Mat channels[] = { Mat::zeros(src.size(), CV_32F), Mat::zeros(src.size(), CV_32F) };
+	split(fourier, channels); // channels[0] = Re(DFT(I)), channels[1] = Im(DFT(I))
+
+	Mat dst, dstf;
+	merge(channels, 2, fourier);
+	dft(fourier, dstf, DFT_INVERSE | DFT_REAL_OUTPUT | DFT_SCALE);
+
+	centeringTransform(dstf);
+	//normalize(dstf, dst, 0, 255, NORM_MINMAX, CV_8UC1);
+	dstf.convertTo(dst, CV_8UC1);
+	return dst;
+}
+
+Mat genericFrequencyDomainFilter(const Mat& src, void (*func)(Mat& mag, Mat& phi)) {
+	Mat srcf;
+	src.convertTo(srcf, CV_32FC1);
+
+	centeringTransform(srcf);
+
+	Mat fourier;
+	dft(srcf, fourier, DFT_COMPLEX_OUTPUT);
+
+	Mat channels[] = { Mat::zeros(src.size(), CV_32F), Mat::zeros(src.size(), CV_32F) };
+	split(fourier, channels); // channels[0] = Re(DFT(I)), channels[1] = Im(DFT(I))
+
+	Mat mag, phi;
+	magnitude(channels[0], channels[1], mag);
+	phase(channels[0], channels[1], phi);
+
+	(*func)(mag, phi);
+	polarToCart(mag, phi, channels[0], channels[1]);
+
+	Mat dst, dstf;
+	merge(channels, 2, fourier);
+	dft(fourier, dstf, DFT_INVERSE | DFT_REAL_OUTPUT | DFT_SCALE);
+
+	centeringTransform(dstf);
+	normalize(dstf, dst, 0, 255, NORM_MINMAX, CV_8UC1);
+	//dstf.convertTo(dst, CV_8UC1);
+	return dst;
+}
+
+Mat genericFrequencyDomainFilter(const Mat& src, double arg, void (*func)(Mat& mag, Mat& phi, double arg)) {
+	Mat srcf;
+	src.convertTo(srcf, CV_32FC1);
+
+	centeringTransform(srcf);
+
+	Mat fourier;
+	dft(srcf, fourier, DFT_COMPLEX_OUTPUT);
+
+	Mat channels[] = { Mat::zeros(src.size(), CV_32F), Mat::zeros(src.size(), CV_32F) };
+	split(fourier, channels); // channels[0] = Re(DFT(I)), channels[1] = Im(DFT(I))
+
+	Mat mag, phi;
+	magnitude(channels[0], channels[1], mag);
+	phase(channels[0], channels[1], phi);
+
+	(*func)(mag, phi, arg);
+	polarToCart(mag, phi, channels[0], channels[1]);
+
+	Mat dst, dstf;
+	merge(channels, 2, fourier);
+	dft(fourier, dstf, DFT_INVERSE | DFT_REAL_OUTPUT | DFT_SCALE);
+
+	centeringTransform(dstf);
+	normalize(dstf, dst, 0, 255, NORM_MINMAX, CV_8UC1);
+	//dstf.convertTo(dst, CV_8UC1);
+	return dst;
+}
+
+void testIdenticalFrequencyFilter() {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+
+	Mat transformed = genericFrequencyDomainFilter(image);
+	imshow("Transformed", transformed);
+	
+	waitKey();
+}
+
+//9.5.4
+void logMagnitudeFunc(Mat& mag, Mat& phi) {
+	Mat copy;
+	log(mag, copy);
+	normalize(copy, copy, 0, 255, NORM_MINMAX, CV_8UC1);
+	imshow("Log Mag", copy);
+}
+
+void testLogMagnitude() {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+
+	Mat transformed = genericFrequencyDomainFilter(image, logMagnitudeFunc);
+	//imshow("Transformed", transformed);
+
+	waitKey();
+}
+
+//9.5.5
+void lowPassFreq(Mat& mag, Mat& phi, double R) {
+	int srcWidth{ mag.rows };
+	int srcHeight{ mag.cols };
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			int distance = (srcHeight / 2 - i) * (srcHeight / 2 - i) + (srcWidth / 2 - j) * (srcWidth / 2 - j);
+			if (distance > R * R) {
+				mag.at<float>(i, j) = 0.0f;
+			}
+		}
+	}
+}
+
+void highPassFreq(Mat& mag, Mat& phi, double R) {
+	int srcWidth{ mag.rows };
+	int srcHeight{ mag.cols };
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			int distance = (srcHeight / 2 - i) * (srcHeight / 2 - i) + (srcWidth / 2 - j) * (srcWidth / 2 - j);
+			if (distance < R * R) {
+				mag.at<float>(i, j) = 0.0f;
+			}
+		}
+	}
+}
+
+void lowPassGaussianFreq(Mat& mag, Mat& phi, double A) {
+	int srcWidth{ mag.rows };
+	int srcHeight{ mag.cols };
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			int distance = (srcHeight / 2 - i) * (srcHeight / 2 - i) + (srcWidth / 2 - j) * (srcWidth / 2 - j);
+			mag.at<float>(i, j) = mag.at<float>(i, j) * pow(M_E, -distance / (A * A));
+		}
+	}
+}
+
+void highPassGaussianFreq(Mat& mag, Mat& phi, double A) {
+	int srcWidth{ mag.rows };
+	int srcHeight{ mag.cols };
+
+	for (int i = 0; i < srcHeight; i++) {
+		for (int j = 0; j < srcWidth; j++) {
+			int distance = (srcHeight / 2 - i) * (srcHeight / 2 - i) + (srcWidth / 2 - j) * (srcWidth / 2 - j);
+			mag.at<float>(i, j) = mag.at<float>(i, j) * (1 - pow(M_E, -distance / (A * A)));
+		}
+	}
+}
+
+void testFrequencyFilter(double R, double A) {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+
+	Mat idealLowPass = genericFrequencyDomainFilter(image, R, lowPassFreq);
+	imshow("Ideal Low Pass", idealLowPass);
+
+	Mat idealHighPass = genericFrequencyDomainFilter(image, R, highPassFreq);
+	imshow("Ideal High Pass", idealHighPass);
+
+	Mat gaussianLowPass = genericFrequencyDomainFilter(image, A, lowPassGaussianFreq);
+	imshow("Gaussian Low Pass", gaussianLowPass);
+
+	Mat gaussianHighPass = genericFrequencyDomainFilter(image, A, highPassGaussianFreq);
+	imshow("Gaussian High Pass", gaussianHighPass);
+
+	waitKey();
+}
+
 int main()
 {
 	int op;
@@ -2427,6 +2714,7 @@ int main()
 	double thresholdError;
 	int brightnessOffset, minContrast, maxContrast;
 	double gammaVal;
+	double R, A;
 	do
 	{
 		system("cls");
@@ -2467,6 +2755,10 @@ int main()
 		printf(" 33 - 8.8.2 (Global Automatic Binarization)\n");
 		printf(" 34 - 8.8.3 (Analytical transformations)\n");
 		printf(" 35 - 8.8.4 (Histogram equalization)\n");
+		printf(" 36 - 9.5.1 && 9.5.2 (Low-pass/High-pass spatial filters)\n");
+		printf(" 37 - 9.5.3 (Verify if the image filtered with a generic filter is the same as the original)\n");
+		printf(" 38 - 9.5.4 (Log of magnitude)\n");
+		printf(" 39 - 9.5.5 (Frequency filters)\n");
 		printf(" 0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
@@ -2780,6 +3072,22 @@ int main()
 			break;
 		case 35:
 			histogramEqualization();
+			break;
+		case 36:
+			testSpatialFilter();
+			break;
+		case 37:
+			testIdenticalFrequencyFilter();
+			break;
+		case 38:
+			testLogMagnitude();
+			break;
+		case 39:
+			std::cout << "Radius: ";
+			std::cin >> R;
+			std::cout << "A: ";
+			std::cin >> A;
+			testFrequencyFilter(R, A);
 			break;
 		}
 	} while (op != 0);
