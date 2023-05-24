@@ -62,53 +62,53 @@ D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_T
           [
               _Tp=float
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2689,46): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2699,46): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=float
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2701,46): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2711,46): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=float
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2773,91): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2783,91): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=float
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2931,33): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2941,33): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=float
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2941,37): warning C4244: '*=': conversion from 'double' to '_Tp', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2951,37): warning C4244: '*=': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=float
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2965,49): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2975,49): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=float
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2968,30): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(2978,30): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=float
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3060,44): warning C4305: '-=': truncation from 'double' to '_Tp'
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3070,44): warning C4305: '-=': truncation from 'double' to '_Tp'
           with
           [
               _Tp=float
           ]
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3213,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3213,10): message : consider using '%hhd' in the format string
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3219,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3219,10): message : consider using '%hhd' in the format string
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3237,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3237,10): message : consider using '%hhd' in the format string
-D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3124,6): warning C4101: 'threshold': unreferenced local variable
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3343,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3343,10): message : consider using '%hhd' in the format string
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3349,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3349,10): message : consider using '%hhd' in the format string
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3367,10): warning C4477: 'scanf' : format string '%d' requires an argument of type 'int *', but variadic argument 1 has type 'uchar *'
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3367,10): message : consider using '%hhd' in the format string
+D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\OpenCVApplication.cpp(3239,6): warning C4101: 'threshold': unreferenced local variable
   OpenCVApplication.vcxproj -> D:\OneDrive - Technical University of Cluj-Napoca\UTCN\An III\S2\_Cod_Proiecte_Teme\PI\Lab\OpenCVApplication-VS2017_OCV340_basic\x64\Debug\OpenCVApplication.exe
   OpenCV\dll\Debug\opencv_ffmpeg340_64.dll
   OpenCV\dll\Debug\opencv_world340d.dll

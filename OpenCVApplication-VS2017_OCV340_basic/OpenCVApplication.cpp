@@ -2495,6 +2495,16 @@ Mat createMatFromArray(const double arr[], const int matRows, const int matCols)
 	return mat;
 }
 
+Mat createMatFromArray(const uchar arr[], const int matRows, const int matCols) {
+	Mat mat(matRows, matCols, CV_8UC1);
+
+	for (int i = 0; i < matRows * matCols; i++) {
+		mat.at<uchar>(i / matCols, i % matCols) = arr[i];
+	}
+
+	return mat;
+}
+
 void testSpatialFilter() {
 	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
 	imshow("Original", image);
@@ -3108,6 +3118,111 @@ void testCanny1_3(int w) {
 	waitKey();
 }
 
+
+
+//11.3.2.1
+Mat adaptiveEdgeHisteresisBinarization(const Mat& gradientModule, double p, double k) {
+	Mat copyModule = Mat::zeros(gradientModule.rows, gradientModule.cols, CV_8UC1);
+	std::vector<int> hist{ histogram(gradientModule)};
+	int nonEdgePixelsThreshold{ static_cast<int>((1 - p) * (gradientModule.rows * gradientModule.cols - hist.at(0))) };
+	int nonEdgePixels{ 0 }, histIndex{ 1 };
+
+	while (nonEdgePixels < nonEdgePixelsThreshold) {
+		nonEdgePixels += hist.at(histIndex);
+		histIndex++;
+	}
+
+	for (int i = 0; i < gradientModule.rows; i++) {
+		for (int j = 0; j < gradientModule.cols; j++) {
+			if (gradientModule.at<uchar>(i, j) < k * histIndex) {
+				copyModule.at<uchar>(i, j) = 0;
+			}
+			else if (gradientModule.at<uchar>(i, j) < histIndex) {
+				copyModule.at<uchar>(i, j) = 128;
+			}
+			else{
+				copyModule.at<uchar>(i, j) = 255;
+			}
+		}
+	}
+
+	return copyModule;
+}
+
+void edgeExtension(Mat& gradientModule, const Point& startingPoint, const Mat& vicinity) {
+	Point current;
+	std::queue<Point> q;
+	int vicinityWidth{ vicinity.cols };
+	int vicinityHeight{ vicinity.rows };
+	int newX, newY;
+
+	q.push(startingPoint);
+	while (!q.empty()) {
+		current = q.front();
+		q.pop();
+
+		for (int i = -vicinityHeight / 2; i <= vicinityHeight / 2; i++) {
+			for (int j = -vicinityWidth / 2; j <= vicinityWidth / 2; j++) {
+				if (vicinity.at<uchar>(i + vicinityHeight / 2, j + vicinityWidth / 2)) {
+					newY = current.y + i;
+					newX = current.x + j;
+					if (gradientModule.at<uchar>(newY, newX) == 128) {
+						gradientModule.at<uchar>(newY, newX) = 255;
+						q.push(Point(newX, newY));
+					}
+				}
+			}
+		}
+	}
+}
+
+Mat histeresisEdgeExtension(const Mat& gradientModule, const Mat& vicinity) {
+	Mat copyModule;
+	gradientModule.copyTo(copyModule);
+
+	for (int i = 0; i < copyModule.rows; i++) {
+		for (int j = 0; j < copyModule.cols; j++) {
+			if (copyModule.at<uchar>(i, j) == 255) {
+				edgeExtension(copyModule, Point(j, i), vicinity);
+			}
+		}
+	}
+
+	for (int i = 0; i < copyModule.rows; i++) {
+		for (int j = 0; j < copyModule.cols; j++) {
+			if (copyModule.at<uchar>(i, j) == 128) {
+				copyModule.at<uchar>(i, j) = 0;
+			}
+		}
+	}
+
+	return copyModule;
+}
+
+void testCanny(int w, double p, double k) {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+
+	Mat justSobelX = sobelGradientX(image, CV_32FC1, FilterType::NONE);
+	Mat justSobelY = sobelGradientY(image, CV_32FC1, FilterType::NONE);
+	imshow("Just Sobel", computeGradientModule(justSobelX, justSobelY, true, true));
+
+	Mat gaussian = convSquareKernel(image, gaussianKernelGenerator(w), CV_8UC1, FilterType::LOW_PASS);
+	Mat gaussianSobelX = sobelGradientX(gaussian, CV_32FC1, FilterType::NONE);
+	Mat gaussianSobelY = sobelGradientY(gaussian, CV_32FC1, FilterType::NONE);
+	Mat gaussianModule = computeGradientModule(gaussianSobelX, gaussianSobelY, true, true);
+	Mat gaussianOrientation = computeGradientOrientation(gaussianSobelX, gaussianSobelY, false, false, false);
+	Mat gaussianThinned = edgeThinning(gaussianModule, gaussianOrientation);
+	Mat gaussianHistBinarized = adaptiveEdgeHisteresisBinarization(gaussianThinned, p, k);
+	uchar box3x3[9] = { 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+	Mat gaussianEdgeExtended = histeresisEdgeExtension(gaussianHistBinarized, createMatFromArray(box3x3, 3, 3));
+	imshow("Canny 1-3", gaussianThinned);
+	imshow("Canny 1-4.1", gaussianHistBinarized);
+	imshow("Canny full", gaussianEdgeExtended);
+
+	waitKey(0);
+}
+
 int main()
 {
 	int op;
@@ -3122,11 +3237,13 @@ int main()
 	double R, A;
 	int w;
 	int threshold;
+	double pp, k;
 	do
 	{
 		system("cls");
 		destroyAllWindows();
 		printf("Menu:\n");
+		printf(" ========================= Tests =========================\n");
 		printf(" 1 - Open image\n");
 		printf(" 2 - Open BMP images afrom folder\n");
 		printf(" 3 - Image negative - diblook style\n");
@@ -3136,44 +3253,57 @@ int main()
 		printf(" 7 - Edges in a video sequence\n");
 		printf(" 8 - Snap frame from live video\n");
 		printf(" 9 - Mouse callback demo\n");
+		printf(" \n====================== Laborator 1 ======================\n");
 		printf(" 10 - 1.10.3 Image intensity increase\n");
 		printf(" 11 - 1.10.4 Image contrast increase\n");
 		printf(" 12 - 1.10.5 Display flag\n");
 		printf(" 13 - 1.10.6 Matrix inverse\n");
+		printf(" \n====================== Laborator 2 ======================\n");
 		printf(" 14 - 2.7.1 (Color to R, G, B channels)\n");
 		printf(" 15 - 2.7.2 (Color to Grayscale)\n");
 		printf(" 16 - 2.7.3 (Grayscale to binary)\n");
 		printf(" 17 - 2.7.4 (Color to H, S, V channels)\n");
 		printf(" 18 - 2.7.5 (IsInside test)\n");
+		printf(" \n====================== Laborator 3 ======================\n");
 		printf(" 19 - 3.6.1 && 3.6.2 && 3.6.3 && 3.6.4 (Histogram (bins <= 256) + FDP)\n");
 		printf(" 20 - 3.6.5 && 3.6.6 (Grayscale levels reducing)\n");
 		printf(" 21 - 3.6.7 (HSV H reducing)\n");
+		printf(" \n====================== Laborator 4 ======================\n");
 		printf(" 22 - 4.4.1 (Geometry)\n");
 		printf(" 23 - 4.4.2 (Filtering based on area and elongation angle)\n");
+		printf(" \n====================== Laborator 5 ======================\n");
 		printf(" 24 - 5.5.1 && 5.5.2 (Labeling using BFS)\n");
 		printf(" 25 - 5.5.3 (Labeling using 2 passes and Disjoint sets)\n");
+		printf(" \n====================== Laborator 6 ======================\n");
 		printf(" 26 - 6.3.1 && 6.3.2 (Contour tracing with chain code and derived chain code)\n");
 		printf(" 27 - 6.3.3 (Reconstruction by reading chain code)\n");
+		printf(" \n====================== Laborator 7 ======================\n");
 		printf(" 28 - 7.4.1 (Morph operations)\n");
 		printf(" 29 - 7.4.2 (Repeated morph operations)\n");
 		printf(" 30 - 7.4.3 (Contour using morph operations)\n");
 		printf(" 31 - 7.4.4 (Fill using morph operations)\n");
+		printf(" \n====================== Laborator 8 ======================\n");
 		printf(" 32 - 8.8.1 (Mean, Std. dev., histogram and cumulative histogram for grayscale)\n");
 		printf(" 33 - 8.8.2 (Global Automatic Binarization)\n");
 		printf(" 34 - 8.8.3 (Analytical transformations)\n");
 		printf(" 35 - 8.8.4 (Histogram equalization)\n");
+		printf(" \n====================== Laborator 9 ======================\n");
 		printf(" 36 - 9.5.1 && 9.5.2 (Low-pass/High-pass spatial filters)\n");
 		printf(" 37 - 9.5.3 (Verify if the image filtered with a generic filter is the same as the original)\n");
 		printf(" 38 - 9.5.4 (Log of magnitude)\n");
 		printf(" 39 - 9.5.5 (Frequency filters)\n");
+		printf(" \n====================== Laborator 10 ======================\n");
 		printf(" 40 - 10.5.1 (Median filter)\n");
 		printf(" 41 - 10.5.2 (Gaussian bidimensional kernel filter)\n");
 		printf(" 42 - 10.5.3 (Gaussian unidimensional kernels filter)\n");
+		printf(" \n====================== Laborator 11 ======================\n");
 		printf(" 43 - 11.3.1.1 (Gradient x and y components)\n");
 		printf(" 44 - 11.3.1.2 (Gradient module and orientation)\n");
 		printf(" 45 - 11.3.1.3 (Gradient module binarization)\n");
 		printf(" 46 - 11.3.1.4 (Canny 1-3)\n");
-		printf(" 0 - Exit\n\n");
+		printf(" \n====================== Laborator 12 ======================\n");
+		printf(" 47 - 11.3.2.1 (Canny)\n");
+		printf(" \n0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
 		std::vector<int> hist(256, 0);
@@ -3533,6 +3663,15 @@ int main()
 			std::cout << "w: ";
 			std::cin >> w;
 			testCanny1_3(w);
+			break;
+		case 47:
+			std::cout << "w: ";
+			std::cin >> w;
+			std::cout << "p: ";
+			std::cin >> pp;
+			std::cout << "k: ";
+			std::cin >> k;
+			testCanny(w, pp, k);
 			break;
 		}
 	} while (op != 0);
