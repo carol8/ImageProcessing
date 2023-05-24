@@ -2155,9 +2155,10 @@ Mat openImage(int flags) {
 
 	if (openFileDlg(fname)) {
 		image = imread(fname, flags);
+		return image;
 	}
 
-	return image;
+	return Mat(0, 0, CV_8UC1);
 }
 
 double mean(const Mat& image) {
@@ -2419,41 +2420,37 @@ void histogramEqualization() {
 
 //9.5.1
 enum FilterType {
+	NONE,
 	LOW_PASS,
 	HIGH_PASS
 };
 
-Mat filter(const Mat& image, const Kernel& kernel, const FilterType filterType) {
-	int srcWidth{ image.cols };
-	int srcHeight{ image.rows };
-	int kernelWidth{ kernel.getKernel().cols };
-	int kernelHeight{ kernel.getKernel().rows };
-	Mat copy;
-	image.copyTo(copy);
-	int startX{ kernel.getOrigin().x };
-	int endX{ srcWidth - (kernelWidth - startX - 1) };
-	int startY{ kernel.getOrigin().y };
-	int endY{ srcHeight - (kernelHeight - startY - 1) };
-	int invKernelCoefficient{ 1 };
-	int kernelOffset{ 0 };
+Mat convSquareKernel(const Mat& image, const Mat& kernel, const int outputType, const FilterType filterType) {
+	int imageWidth{ image.cols };
+	int imageHeight{ image.rows };
+	int kernelSize{ kernel.rows };
+	int kernelOffset = 0;
+	double sum{ 0.0 }, sumP{ 0.0 }, sumM{ 0.0 }, invKernelCoefficient = 1.0;
+	Mat copy = Mat::zeros(image.rows, image.cols, outputType);
+
+	std::cout << kernel << '\n';
+
 	if (filterType == FilterType::LOW_PASS) {
-		int sum{ 0 };
-		for (int i = 0; i < kernelHeight; i++) {
-			for (int j = 0; j < kernelHeight; j++) {
-				sum += kernel.getKernel().at<int>(i, j);
+		for (int i = 0; i < kernelSize; i++) {
+			for (int j = 0; j < kernelSize; j++) {
+				sum += kernel.at<float>(i, j);
 			}
 		}
 		invKernelCoefficient = sum;
 	}
 	else if (filterType == FilterType::HIGH_PASS) {
-		int sumP{ 0 }, sumM{ 0 };
-		for (int i = 0; i < kernelHeight; i++) {
-			for (int j = 0; j < kernelWidth; j++) {
-				if (kernel.getKernel().at<int>(i, j) > 0) {
-					sumP += kernel.getKernel().at<int>(i, j);
+		for (int i = 0; i < kernelSize; i++) {
+			for (int j = 0; j < kernelSize; j++) {
+				if (kernel.at<float>(i, j) > 0) {
+					sumP += kernel.at<float>(i, j);
 				}
 				else {
-					sumM -= kernel.getKernel().at<int>(i, j);
+					sumM -= kernel.at<float>(i, j);
 				}
 			}
 		}
@@ -2461,55 +2458,76 @@ Mat filter(const Mat& image, const Kernel& kernel, const FilterType filterType) 
 		kernelOffset = 127;
 	}
 
-	for (int i = startY; i < endY; i++) {
-		for (int j = startX; j < endX; j++) {
-			long long sum = 0;
-			for (int iKernel = 0; iKernel < kernelHeight; iKernel++) {
-				for (int jKernel = 0; jKernel < kernelWidth; jKernel++) {
-					sum += ((long long)kernel.getKernel().at<int>(iKernel, jKernel)) * image.at<uchar>(i - kernel.getOrigin().y + iKernel, j - kernel.getOrigin().x + jKernel);
+	double t = (double)getTickCount();
+
+	for (int i = kernelSize / 2; i < imageHeight - kernelSize / 2; i++) {
+		for (int j = kernelSize / 2; j < imageWidth - kernelSize / 2; j++) {
+			sum = 0.0;
+			for (int ii = -kernelSize / 2; ii <= kernelSize / 2; ii++) {
+				for (int jj = -kernelSize / 2; jj <= kernelSize / 2; jj++) {
+					sum += image.at<uchar>(i + ii, j + jj) * kernel.at<float>(ii + kernelSize / 2, jj + kernelSize / 2);
 				}
 			}
-			copy.at<uchar>(i, j) = ((double)sum) / invKernelCoefficient + kernelOffset;
+			switch (outputType) {
+				case CV_8UC1:
+					copy.at<uchar>(i, j) = static_cast<uchar>(sum / invKernelCoefficient + kernelOffset);
+					break;
+				case CV_32FC1:
+					copy.at<float>(i, j) = sum / invKernelCoefficient + kernelOffset;
+			}
 		}
 	}
+
+	t = ((double)getTickCount() - t) / getTickFrequency();
+	printf("Time (for conv square kernel) = %.3f [ms]\n", t * 1000);
 
 	return copy;
 }
 
 //9.5.2
+Mat createMatFromArray(const double arr[], const int matRows, const int matCols) {
+	Mat mat(matRows, matCols, CV_32FC1);
+	
+	for (int i = 0; i < matRows * matCols; i++) {
+		mat.at<float>(i / matCols, i % matCols) = arr[i];
+	}
+
+	return mat;
+}
+
 void testSpatialFilter() {
 	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
 	imshow("Original", image);
 
-	int k5[3][3]{1,1,1,1,1,1,1,1,1};
-	Mat mat5(3, 3, CV_32SC1, k5);
-	Mat imageKernel5 = filter(image, Kernel(mat5, Point(1, 1)), LOW_PASS);
-	imshow("Kernel 5", imageKernel5);
+	double k5[9]{ 1,1,1,1,1,1,1,1,1 };
+	Mat mat5 = createMatFromArray(k5, 3, 3);
+	Mat imageKernel5 = convSquareKernel(image, mat5, CV_8UC1, LOW_PASS);
+	imshow("Average filter", imageKernel5);
 
-	int k6[3][3]{ 1,2,1,2,4,2,1,2,1 };
-	Mat mat6(3, 3, CV_32SC1, k6);
-	Mat imageKernel6 = filter(image, Kernel(mat6, Point(1, 1)), LOW_PASS);
-	imshow("Kernel 6", imageKernel6);
+	double k6[9]{ 1,2,1,2,4,2,1,2,1 };
+	Mat mat6 = createMatFromArray(k6, 3, 3);
+	Mat imageKernel6 = convSquareKernel(image, mat6, CV_8UC1, LOW_PASS);
+	imshow("Gaussian filter", imageKernel6);
 
-	int k7[3][3]{ 0,-1,0,-1,4,-1,0,-1,0 };
-	Mat mat7(3, 3, CV_32SC1, k7);
-	Mat imageKernel7 = filter(image, Kernel(mat7, Point(1, 1)), HIGH_PASS);
-	imshow("Kernel 7", imageKernel7);
+	double k7[9]{ 0,-1,0,-1,4,-1,0,-1,0 };
+	Mat mat7 = createMatFromArray(k7, 3, 3);
+	Mat imageKernel7 = convSquareKernel(image, mat7, CV_8UC1, HIGH_PASS);
+	imshow("Laplace filter V1", imageKernel7);
 
-	int k8[3][3]{ -1,-1,-1,-1,8,-1,-1,-1,-1 };
-	Mat mat8(3, 3, CV_32SC1, k8);
-	Mat imageKernel8 = filter(image, Kernel(mat8, Point(1, 1)), HIGH_PASS);
-	imshow("Kernel 8", imageKernel8);
+	double k8[9]{ -1,-1,-1,-1,8,-1,-1,-1,-1 };
+	Mat mat8 = createMatFromArray(k8, 3, 3);
+	Mat imageKernel8 = convSquareKernel(image, mat8, CV_8UC1, HIGH_PASS);
+	imshow("Laplace filter V2", imageKernel8);
 
-	int k9[3][3]{ 0,-1,0,-1,5,-1,0,-1,0 };
-	Mat mat9(3, 3, CV_32SC1, k9);
-	Mat imageKernel9 = filter(image, Kernel(mat9, Point(1, 1)), HIGH_PASS);
-	imshow("Kernel 9", imageKernel9);
+	double k9[9]{ 0,-1,0,-1,5,-1,0,-1,0 };
+	Mat mat9 = createMatFromArray(k9, 3, 3);
+	Mat imageKernel9 = convSquareKernel(image, mat9, CV_8UC1, HIGH_PASS);
+	imshow("High-pass filter V1", imageKernel9);
 
-	int k10[3][3]{ -1,-1,-1,-1,9,-1,-1,-1,-1 };
-	Mat mat10(3, 3, CV_32SC1, k10);
-	Mat imageKernel10 = filter(image, Kernel(mat10, Point(1, 1)), HIGH_PASS);
-	imshow("Kernel 10", imageKernel10);
+	double k10[9]{ -1,-1,-1,-1,9,-1,-1,-1,-1 };
+	Mat mat10 = createMatFromArray(k10, 3, 3);
+	Mat imageKernel10 = convSquareKernel(image, mat10, CV_8UC1, HIGH_PASS);
+	imshow("High-pass filter V2", imageKernel10);
 
 	waitKey();
 }
@@ -2746,58 +2764,25 @@ void testMedianFilter(int w) {
 }
 
 //10.5.2
-Kernel gaussianKernelGenerator(int w) {
-	Point origin(w / 2, w / 2);
+Mat gaussianKernelGenerator(int w) {
 	Mat mat = Mat::zeros(w, w, CV_32FC1);
 	double sigma = w / 6.0;
+	double sum{ 0.0 };
 	for (int i = -w / 2; i <= w / 2; i++) {
 		for (int j = -w / 2; j <= w / 2; j++) {
 			mat.at<float>(i + w / 2, j + w / 2) = pow(M_E, -(i * i + j * j) / (2 * sigma * sigma)) / (2 * M_PI * sigma);
 		}
 	}
-	return Kernel(mat, origin);
-}
-
-Mat convSquareKernel(const Mat& image, Kernel kernel) {
-	int imageWidth{ image.cols };
-	int imageHeight{ image.rows };
-	int kernelSize{ kernel.getKernel().rows };
-	double sum{ 0.0 }, invKernelCoefficient;
-	Mat copy;
-	image.copyTo(copy);
-
-	for (int i = 0; i < kernelSize; i++) {
-		for (int j = 0; j < kernelSize; j++) {
-			sum += kernel.getKernel().at<float>(i, j);
-		}
-	}
-	invKernelCoefficient = sum;
-
-	double t = (double)getTickCount();
-
-	for (int i = kernelSize / 2; i < imageHeight - kernelSize / 2; i++) {
-		for (int j = kernelSize / 2; j < imageWidth - kernelSize / 2; j++) {
-			sum = 0.0;
-			for (int ii = -kernelSize / 2; ii <= kernelSize / 2; ii++) {
-				for (int jj = -kernelSize / 2; jj <= kernelSize / 2; jj++) {
-					sum += image.at<uchar>(i + ii, j + jj) * kernel.getKernel().at<float>(ii + kernelSize / 2, jj + kernelSize / 2);
-				}
-			}
-			copy.at<uchar>(i, j) = static_cast<uchar>(sum / invKernelCoefficient);
-		}
-	}
-
-	t = ((double)getTickCount() - t) / getTickFrequency();
-	printf("Time (for gaussian bidimensional kernel) = %.3f [ms]\n", t * 1000);
-
-	return copy;
+	std::cout << mat << '\n';
+	return mat;
 }
 
 void testGaussianBidimensionalKernelFilter(int w) {
 	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
 
 	imshow("Original", image);
-	imshow("Filtered", convSquareKernel(image, gaussianKernelGenerator(w)));
+	Mat gaussian = gaussianKernelGenerator(w);
+	imshow("Filtered", convSquareKernel(image, gaussian, CV_8UC1, FilterType::LOW_PASS));
 
 	waitKey();
 }
@@ -2878,8 +2863,247 @@ void testGaussianUnidimensionalKernelFilters(int w) {
 	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
 
 	imshow("Original", image);
-	imshow("Filtered with bidimensional kernel", convSquareKernel(image, gaussianKernelGenerator(w)));
+	imshow("Filtered with bidimensional kernel", convSquareKernel(image, gaussianKernelGenerator(w), CV_8UC1, FilterType::LOW_PASS));
 	imshow("Filtered with unidimensional kernels", convGaussianKernels(image, gaussianXGenerator(w), gaussianYGenerator(w)));
+
+	waitKey();
+}
+
+
+
+//11.3.1.1
+Mat prewittGradientX(const Mat& image, const int outputType, const FilterType filterType) {
+	double prewittX[9] = { -1, 0, 1, -1, 0, 1, -1, 0, 1 };
+	return convSquareKernel(image, createMatFromArray(prewittX, 3, 3), outputType, filterType);
+}
+
+Mat prewittGradientY(const Mat& image, const int outputType, const FilterType filterType) {
+	double prewittY[9] = { 1, 1, 1, 0, 0, 0, -1, -1, -1 };
+	return convSquareKernel(image, createMatFromArray(prewittY, 3, 3), outputType, filterType);
+}
+
+Mat sobelGradientX(const Mat& image, const int outputType, const FilterType filterType) {
+	double sobelX[9] = { -1, 0, 1, -2, 0, 2, -1, 0, 1 };
+	return convSquareKernel(image, createMatFromArray(sobelX, 3, 3), outputType, filterType);
+}
+
+Mat sobelGradientY(const Mat& image, const int outputType, const FilterType filterType) {
+	double sobelY[9] = { 1, 2, 1, 0, 0, 0, -1, -2, -1 };
+	return convSquareKernel(image, createMatFromArray(sobelY, 3, 3), outputType, filterType);
+}
+
+Mat robertsGradientX(const Mat& image, const int outputType, const FilterType filterType) {
+	double robertsX[9] = { 0, 0, 0, 0, 1, 0, 0, 0, -1 };
+	return convSquareKernel(image, createMatFromArray(robertsX, 3, 3), outputType, filterType);
+}
+
+Mat robertsGradientY(const Mat& image, const int outputType, const FilterType filterType) {
+	double robertsY[9] = { 0, 0, 0, 0, 0, -1, 0, 1, 0 };
+	return convSquareKernel(image, createMatFromArray(robertsY, 3, 3), outputType, filterType);
+}
+
+void testGradientsXY() {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+
+	imshow("Prewitt X", prewittGradientX(image, CV_8UC1, FilterType::HIGH_PASS));
+	imshow("Prewitt Y", prewittGradientY(image, CV_8UC1, FilterType::HIGH_PASS));
+
+	imshow("Sobel X", sobelGradientX(image, CV_8UC1, FilterType::HIGH_PASS));
+	imshow("Sobel Y", sobelGradientY(image, CV_8UC1, FilterType::HIGH_PASS));
+
+	imshow("Roberts X", robertsGradientX(image, CV_8UC1, FilterType::HIGH_PASS));
+	imshow("Roberts Y", robertsGradientY(image, CV_8UC1, FilterType::HIGH_PASS));
+
+	waitKey();
+}
+
+//11.3.1.2
+
+Mat computeGradientModule(const Mat& gradientX, const Mat& gradientY, const bool scaleOutput, const bool convertOutput) {
+	Mat result = Mat::zeros(gradientX.rows, gradientX.cols, CV_32FC1);
+	double max{ 0.0 }, gx{ 0.0 }, gy{ 0.0 };
+
+	for (int i = 0; i < result.rows; i++) {
+		for (int j = 0; j < result.cols; j++) {
+			gx = gradientX.at<float>(i, j);
+			gy = gradientY.at<float>(i, j);
+			result.at<float>(i, j) = sqrt(gx * gx + gy * gy);
+			if (scaleOutput && max < result.at<float>(i, j)) {
+				max = result.at<float>(i, j);
+			}
+		}
+	}
+
+	if (scaleOutput) {
+		for (int i = 0; i < result.rows; i++) {
+			for (int j = 0; j < result.cols; j++) {
+				result.at<float>(i, j) *= 255.0 / max;
+			}
+		}
+	}
+
+	if (convertOutput) {
+		result.convertTo(result, CV_8UC1);
+	}
+
+	return result;
+}
+
+Mat computeGradientOrientation(const Mat& gradientX, const Mat& gradientY, const bool robertsCompensation, const bool scaleOutput, const bool convertOutput) {
+	Mat result = Mat::zeros(gradientX.rows, gradientX.cols, CV_32FC1);
+
+	for (int i = 0; i < gradientX.rows; i++) {
+		for (int j = 0; j < gradientX.cols; j++) {
+			double gx = gradientX.at<float>(i, j);
+			double gy = gradientY.at<float>(i, j);
+			double tan = atan2(gy, gx) + (robertsCompensation ? 0.75 * M_PI : 0);
+			if (tan < 0) {
+				tan += 2 * M_PI;
+			}
+			if (scaleOutput) {
+				result.at<float>(i, j) = tan / (2.0 * M_PI) * 255.0;
+			}
+			else {
+				result.at<float>(i, j) = tan;
+			}
+		}
+	}
+	
+	if (convertOutput) {
+		result.convertTo(result, CV_8UC1);
+	}
+
+	return result;
+}
+
+void testGradientsModuleDirection() {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+
+	Mat prewittX = prewittGradientX(image, CV_32FC1, FilterType::NONE);
+	Mat prewittY = prewittGradientY(image, CV_32FC1, FilterType::NONE);
+	imshow("Prewitt module", computeGradientModule(prewittX, prewittY, true, true));
+	imshow("Prewitt orientation", computeGradientOrientation(prewittX, prewittY, false, true, true));
+
+	Mat sobelX = sobelGradientX(image, CV_32FC1, FilterType::NONE);
+	Mat sobelY = sobelGradientY(image, CV_32FC1, FilterType::NONE);
+	imshow("Sobel module", computeGradientModule(sobelX, sobelY, true, true));
+	imshow("Sobel orientation", computeGradientOrientation(sobelX, sobelY, false, true, true));
+
+	Mat robertsX = robertsGradientX(image, CV_32FC1, FilterType::NONE);
+	Mat robertsY = robertsGradientY(image, CV_32FC1, FilterType::NONE);
+	imshow("Roberts module", computeGradientModule(robertsX, robertsY, true, true));
+	imshow("Roberts orientation", computeGradientOrientation(robertsX, robertsY, true, true, true));
+
+	waitKey();
+}
+
+//11.3.1.3
+Mat binarize(const Mat& image, int threshold) {
+	Mat result = Mat::zeros(image.rows, image.cols, CV_8UC1);
+
+	for (int i = 0; i < image.rows; i++) {
+		for (int j = 0; j < image.cols; j++) {
+			if (image.at<uchar>(i, j) > threshold) {
+				result.at<uchar>(i, j) = 255;
+			}
+		}
+	}
+
+	return result;
+}
+
+void testGradientsModuleBinarizations(int threshold) {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+
+	Mat prewittX = prewittGradientX(image, CV_32FC1, FilterType::NONE);
+	Mat prewittY = prewittGradientY(image, CV_32FC1, FilterType::NONE);
+	imshow("Prewitt module", binarize(computeGradientModule(prewittX, prewittY, true, true), threshold));
+
+	Mat sobelX = sobelGradientX(image, CV_32FC1, FilterType::NONE);
+	Mat sobelY = sobelGradientY(image, CV_32FC1, FilterType::NONE);
+	imshow("Sobel module", binarize(computeGradientModule(sobelX, sobelY, true, true), threshold));
+
+	Mat robertsX = robertsGradientX(image, CV_32FC1, FilterType::NONE);
+	Mat robertsY = robertsGradientY(image, CV_32FC1, FilterType::NONE);
+	imshow("Roberts module", binarize(computeGradientModule(robertsX, robertsY, true, true), threshold));
+
+	waitKey();
+}
+
+//11.3.1.4
+Mat edgeThinning(const Mat& gradientModule, const Mat& gradientOrientation) {
+	Mat copyModule, copyOrientation;
+	gradientModule.copyTo(copyModule);
+	gradientOrientation.copyTo(copyOrientation);
+	double max{ 0.0 };
+
+	for (int i = 0; i < copyOrientation.rows; i++) {
+		for (int j = 0; j < 2; j++) {
+			copyModule.at<uchar>(i, j) = 0;
+			copyModule.at<uchar>(i, copyOrientation.cols - 1 - j) = 0;
+		}
+	}
+
+	for (int j = 0; j < copyOrientation.cols; j++) {
+		for (int i = 0; i < 2; i++) {
+			copyModule.at<uchar>(i, j) = 0;
+			copyModule.at<uchar>(copyOrientation.rows - 1 - i, j) = 0;
+		}
+	}
+
+	for (int i = 1; i < copyOrientation.rows - 1; i++) {
+		for (int j = 1; j < copyOrientation.cols - 1; j++) {
+			if (copyOrientation.at<float>(i, j) > ((7.0 / 8.0) * M_PI)) {
+				copyOrientation.at<float>(i, j) -= M_PI;
+			}
+			
+			if (copyOrientation.at<float>(i, j) < ((1.0 / 8.0) * M_PI)) {		// -1/8 PI to 1/8 PI (cadran 2)
+				if (copyModule.at<uchar>(i, j) <= copyModule.at<uchar>(i, j - 1) ||
+					copyModule.at<uchar>(i, j) <= copyModule.at<uchar>(i, j + 1)) {
+					copyModule.at<uchar>(i, j) = 0;
+				}
+			}
+			else if (copyOrientation.at<float>(i, j) < ((3.0 / 8.0) * M_PI)) {	// 1/8 PI to 3/8 PI (cadran 1)
+				if (copyModule.at<uchar>(i, j) <= copyModule.at<uchar>(i + 1, j - 1) ||
+					copyModule.at<uchar>(i, j) <= copyModule.at<uchar>(i - 1, j + 1)) {
+					copyModule.at<uchar>(i, j) = 0;
+				}
+			}
+			else if (copyOrientation.at<float>(i, j) < ((5.0 / 8.0) * M_PI)) {	// 3/8 PI to 5/8 PI (cadran 0)
+				if (copyModule.at<uchar>(i, j) <= copyModule.at<uchar>(i - 1, j) ||
+					copyModule.at<uchar>(i, j) <= copyModule.at<uchar>(i + 1, j)) {
+					copyModule.at<uchar>(i, j) = 0;
+				}
+			}
+			else {																// 5/8 PI to 7/8 PI (cadran 3)
+				if (copyModule.at<uchar>(i, j) <= copyModule.at<uchar>(i - 1, j - 1) ||
+					copyModule.at<uchar>(i, j) <= copyModule.at<uchar>(i + 1, j + 1)) {
+					copyModule.at<uchar>(i, j) = 0;
+				}
+			}
+		}
+	}
+
+	return copyModule;
+}
+
+void testCanny1_3(int w) {
+	Mat image = openImage(CV_LOAD_IMAGE_GRAYSCALE);
+	imshow("Original", image);
+
+	Mat justSobelX = sobelGradientX(image, CV_32FC1, FilterType::NONE);
+	Mat justSobelY = sobelGradientY(image, CV_32FC1, FilterType::NONE);
+	imshow("Just Sobel", computeGradientModule(justSobelX, justSobelY, true, true));
+	
+	Mat gaussian = convSquareKernel(image, gaussianKernelGenerator(w), CV_8UC1, FilterType::LOW_PASS);
+	Mat gaussianSobelX = sobelGradientX(gaussian, CV_32FC1, FilterType::NONE);
+	Mat gaussianSobelY = sobelGradientY(gaussian, CV_32FC1, FilterType::NONE);
+	Mat gaussianModule = computeGradientModule(gaussianSobelX, gaussianSobelY, true, true);
+	Mat gaussianOrientation = computeGradientOrientation(gaussianSobelX, gaussianSobelY, false, false, false);
+	imshow("Canny 1-3", edgeThinning(gaussianModule, gaussianOrientation));
 
 	waitKey();
 }
@@ -2897,6 +3121,7 @@ int main()
 	double gammaVal;
 	double R, A;
 	int w;
+	int threshold;
 	do
 	{
 		system("cls");
@@ -2944,6 +3169,10 @@ int main()
 		printf(" 40 - 10.5.1 (Median filter)\n");
 		printf(" 41 - 10.5.2 (Gaussian bidimensional kernel filter)\n");
 		printf(" 42 - 10.5.3 (Gaussian unidimensional kernels filter)\n");
+		printf(" 43 - 11.3.1.1 (Gradient x and y components)\n");
+		printf(" 44 - 11.3.1.2 (Gradient module and orientation)\n");
+		printf(" 45 - 11.3.1.3 (Gradient module binarization)\n");
+		printf(" 46 - 11.3.1.4 (Canny 1-3)\n");
 		printf(" 0 - Exit\n\n");
 		printf("Option: ");
 		scanf("%d", &op);
@@ -3288,6 +3517,22 @@ int main()
 			std::cout << "W: ";
 			std::cin >> w;
 			testGaussianUnidimensionalKernelFilters(w);
+			break;
+		case 43:
+			testGradientsXY();
+			break;
+		case 44:
+			testGradientsModuleDirection();
+			break;
+		case 45:
+			std::cout << "Threshold: ";
+			std::cin >> threshold;
+			testGradientsModuleBinarizations(threshold);
+			break;
+		case 46:
+			std::cout << "w: ";
+			std::cin >> w;
+			testCanny1_3(w);
 			break;
 		}
 	} while (op != 0);
